@@ -23,12 +23,15 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Copy source
 COPY . .
 
-# Download OpenSpiel dependencies and build pyspiel
+# Download OpenSpiel dependencies to correct locations and build
 WORKDIR /app/scenarios/bargaining/open_spiel
-RUN git clone --depth 1 https://github.com/abseil/abseil-cpp.git abseil-cpp && \
+RUN echo "=== Cloning dependencies ===" && \
+    git clone --depth 1 https://github.com/abseil/abseil-cpp.git open_spiel/abseil-cpp && \
     git clone --depth 1 https://github.com/pybind/pybind11.git pybind11 && \
+    git clone --depth 1 https://github.com/pybind/pybind11_abseil.git open_spiel/pybind11_abseil && \
+    echo "=== Building OpenSpiel ===" && \
     export CXX=g++ && \
-    python setup.py build_ext --inplace && \
+    python setup.py build_ext --inplace 2>&1 && \
     python setup.py install
 
 WORKDIR /app
