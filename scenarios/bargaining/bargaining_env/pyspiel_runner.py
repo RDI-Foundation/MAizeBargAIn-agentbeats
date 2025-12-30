@@ -445,8 +445,6 @@ def run_pyspiel_pair_nfsp_with_traces(
                                 a = walk_action
                             else:
                                 a = actions[0][0] if actions else 0
-                    if chosen_accept and walk_action is not None and 'walk' in (a_str := state.action_to_string(cur, a) if 'a' in locals() else ''):
-                        pass
                 elif is_row_nfsp and nfsp_row is not None:
                     a = nfsp_row.step(state)
                 elif is_row_rnad and rnad_row is not None:
@@ -538,16 +536,22 @@ def run_pyspiel_pair_nfsp_with_traces(
 
         # Compute payoffs and record JSONL
         if accepted:
-            # Accepted allocation is the proposal on the table; if the last mover was col (1), then accepted_round logic already set
-            # Use the last proposal emitted before acceptance: if acceptance happened by row, then previous was col's keep; and vice-versa.
-            # Approximation: prefer the last_keep_from_col if available at even rounds, else last_keep_from_row.
+            # Accepted allocation: the acceptor gets what the proposer offered to them.
+            # In OpenSpiel negotiation, "keep" vector = what the proposer keeps.
+            # Round 1 (odd): Row proposes, Column accepts → Row keeps last_keep_from_row
+            # Round 2 (even): Column proposes, Row accepts → Column keeps last_keep_from_col
             if accepted_round % 2 == 0:
-                # Column just moved this round
-                keep_for_row = last_keep_from_col or [quantities[0] // 2, quantities[1] // 2, quantities[2] // 2]
+                # Even round: Column proposed, Row accepted
+                # Column keeps last_keep_from_col, Row gets the complement
+                col_keeps = last_keep_from_col or [quantities[0] // 2, quantities[1] // 2, quantities[2] // 2]
+                a1 = [quantities[i] - col_keeps[i] for i in range(len(quantities))]  # Row gets complement
+                a2 = col_keeps  # Column keeps what they proposed
             else:
-                keep_for_row = last_keep_from_row or [quantities[0] // 2, quantities[1] // 2, quantities[2] // 2]
-            a1 = keep_for_row
-            a2 = [quantities[i] - a1[i] for i in range(len(quantities))]
+                # Odd round: Row proposed, Column accepted
+                # Row keeps last_keep_from_row, Column gets the complement
+                row_keeps = last_keep_from_row or [quantities[0] // 2, quantities[1] // 2, quantities[2] // 2]
+                a1 = row_keeps  # Row keeps what they proposed
+                a2 = [quantities[i] - row_keeps[i] for i in range(len(quantities))]  # Column gets complement
             disc = discount ** (accepted_round - 1)
             p1 = float(_value(v1, a1)) * disc
             p2 = float(_value(v2, a2)) * disc

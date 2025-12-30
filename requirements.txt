@@ -10,6 +10,10 @@ uvicorn>=0.35.0
 numpy>=1.26.0
 cvxpy>=1.4.0
 
+# RL dependencies (NFSP/RNAD wrappers). Torch CPU wheel via PyTorch index.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.3.1
+
 # Note: The agentbeats package is included as a local package in src/agentbeats/
 # Python buildpacks will automatically include it when deploying from the repo root.
 

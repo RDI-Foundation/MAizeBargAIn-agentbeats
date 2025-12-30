@@ -324,6 +324,134 @@ Example CLI config payload:
 
 The controller proxies these remote agents through an A2A `ToolProvider`, sending valuations, BATNAs, role (`row`/`col`), round index, and offer summaries. All remote labels plus sanitized endpoint hints are written to `bargaining_runs/*/meta.json["remote_agents"]` for reproducibility.
 
+---
+
+## Meta-Game Analysis Framework
+
+This green agent implements an **Empirical Game-Theoretic Analysis (EGTA)** pipeline based on the methodology developed by Zun Li and Michael Wellman. The framework evaluates negotiation agents by analyzing their strategic interactions within a meta-game.
+
+### Theoretical Foundation
+
+The meta-game analysis follows these principles from computational game theory:
+
+1. **Empirical Game Construction**: Instead of analytically deriving equilibria, we simulate pairwise matchups between all agents to empirically estimate the payoff matrix.
+
+2. **Maximum Entropy Nash Equilibrium (MENE)**: We compute the Nash equilibrium that maximizes entropy over the agent population. This provides a unique, well-defined solution concept that represents a "maximally uncertain" rational population.
+
+3. **Regret Analysis**: For each agent, we compute the regret (potential gain from unilateral deviation) against the MENE mixture to measure how well-adapted each agent is to the meta-game equilibrium.
+
+### Pipeline Overview
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  Purple Agent   │    │   Green Agent    │    │  Baseline Pool  │
+│  (Challenger)   │───▶│  (Orchestrator)  │◀───│  soft, tough,   │
+└─────────────────┘    │                  │    │  aspiration,    │
+                       │  1. Build Roster │    │  walk, nfsp,    │
+                       │  2. Run Matrix   │    │  rnad           │
+                       │  3. MENE Solve   │    └─────────────────┘
+                       │  4. Compute      │
+                       │     Metrics      │
+                       └────────┬─────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │   Evaluation    │
+                       │   Results       │
+                       │  - Regrets      │
+                       │  - Welfare      │
+                       │  - Fairness     │
+                       └─────────────────┘
+```
+
+**Step 1: Agent Roster Construction**
+- Baseline agents: `soft` (always accepts), `tough` (minimal offers), `aspiration` (concedes gradually), `walk` (takes BATNA)
+- RL agents: `nfsp` (Neural Fictitious Self-Play), `rnad` (Regularized Nash Dynamics) when checkpoints available
+- Remote agents: The submitted purple agent(s)
+
+**Step 2: Pairwise Simulation**
+- For each ordered pair (i, j), simulate N games with agent i as row player and j as column player
+- Uses OpenSpiel's negotiation game with:
+  - 3 item types with quantities (7, 4, 1)
+  - Private valuations drawn uniformly from [1, 100]
+  - Private BATNAs (outside offers)
+  - Discount factor γ = 0.98 per round
+  - Maximum 5 rounds
+
+**Step 3: Payoff Matrix & MENE**
+- Construct symmetric payoff matrix M[i][j] = average payoff for agent i against j
+- Solve for MENE using MILP formulation (CVXPY with ECOS_BB/GLPK_MI)
+- Bootstrap resampling (default 100 iterations) for statistical robustness
+
+**Step 4: Metrics Computation**
+- Compute regret and welfare metrics weighted by the MENE mixture
+
+### Evaluation Metrics
+
+| Metric | Description | Formula |
+|--------|-------------|---------|
+| **MENE Regret** | Potential gain from deviating to a best-response strategy | max(0, BR payoff - MENE payoff) |
+| **UW (Utilitarian Welfare)** | Sum of both players' payoffs | p₁ + p₂ |
+| **NW (Nash Welfare)** | Geometric mean of payoffs (Pareto-fair measure) | √(p₁ × p₂) |
+| **NWA (Nash Welfare - BATNA)** | Surplus over outside options | √(max(0, p₁-b₁) × max(0, p₂-b₂)) |
+| **EF1 (Envy-Free-1)** | Fairness: envy eliminable by removing one item | Boolean per game |
+
+Welfare metrics are normalized against calibration constants for cross-comparison.
+
+### Prompt Circles (LLM Agents)
+
+For LLM-based purple agents, the green agent provides structured prompts with game context. Seven "circles" of increasing sophistication are available:
+
+| Circle | Focus | Description |
+|--------|-------|-------------|
+| 0-1 | Basic | Game rules, valuations, actions |
+| 2 | BATNA | Emphasizes outside option comparison |
+| 3 | Reasoning | Step-by-step decision framework |
+| 4 | Error Awareness | Lists 5 common negotiation mistakes |
+| 5-6 | Error Prevention | Detailed mistake prevention with examples |
+
+Set `config.challenger_circle` to select the prompt level for your agent.
+
+### Interpreting Results
+
+The evaluation returns:
+
+```json
+{
+  "summary": {
+    "num_agents": 5,
+    "mene_regret_mean": 2.34,
+    "uw_percent_mean": 87.2,
+    "nw_percent_mean": 82.1,
+    "nwa_percent_mean": 45.3,
+    "ef1_percent_mean": 91.5
+  },
+  "per_agent": [
+    {
+      "agent_name": "challenger",
+      "mene_regret": 1.2,
+      "uw_percent": 89.1,
+      "nw_percent": 85.3,
+      "nwa_percent": 52.1,
+      "ef1_percent": 94.2
+    },
+    ...
+  ]
+}
+```
+
+**Good performance indicators:**
+- Low MENE regret (< 5) suggests the agent plays near-optimally against the equilibrium
+- High welfare percentages indicate efficient outcomes
+- High EF1 percentage indicates fair allocations
+
+### References
+
+- Li, Z., & Wellman, M. P. (2023). "Empirical Game-Theoretic Analysis of Adaptive Bargaining Strategies"
+- Wellman, M. P. (2016). "Putting the agent in agent-based modeling." Autonomous Agents and Multi-Agent Systems.
+
+---
+
 ## Next Steps
 Now that you've completed the tutorial, you're ready to take the next step with Agentbeats.
 

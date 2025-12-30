@@ -292,3 +292,106 @@ def run_analysis(
 	return result
 
 
+def _count_profiles(traces_dir: Path) -> int:
+	"""Count available strategy profiles as number of trace files."""
+	if not traces_dir.exists():
+		return 0
+	return len(list(traces_dir.glob("*.jsonl")))
+
+
+def run_metagame_analysis(config: Dict[str, Any] | None = None) -> Dict[str, Any]:
+	"""
+	Run the full metagame analysis and return metrics in a standardized schema.
+
+	Returns:
+	{
+		"summary": {...},
+		"per_agent": [...],
+		"error": {...optional...}
+	}
+	"""
+	cfg = config or {}
+	defaults = {
+		"discount_factor": 0.98,
+		"num_bootstrap": 100,
+		"norm_constants": {"UW": 805.9, "NW": 378.7, "NWA": 81.7},
+		"random_seed": 42,
+	}
+	try:
+		input_dir = cfg.get("input_dir")
+		output_dir = cfg.get("output_dir", "meta_game_analysis/results_bargaining")
+		if not input_dir:
+			raise ValueError("input_dir is required for metagame analysis")
+
+		analysis_kwargs = {
+			"input_dir": input_dir,
+			"output_dir": output_dir,
+			"discount_factor": cfg.get("discount_factor", defaults["discount_factor"]),
+			"num_bootstrap": cfg.get("num_bootstrap", defaults["num_bootstrap"]),
+			"norm_constants": cfg.get("norm_constants", defaults["norm_constants"]),
+			"random_seed": cfg.get("random_seed", defaults["random_seed"]),
+		}
+		res = run_analysis(**analysis_kwargs)
+
+		agents: List[str] = list(res.get("agents", []))
+		avg_regrets: List[float] = res.get("bootstrap", {}).get("averages", {}).get("regrets", []) or []
+		avg_agent_metrics: Dict[str, Dict[str, float]] = res.get("bootstrap", {}).get("averages", {}).get("agent_metrics", {}) or {}
+
+		per_agent: List[Dict[str, Any]] = []
+		for idx, agent in enumerate(agents):
+			am = avg_agent_metrics.get(agent, {})
+			per_agent.append(
+				{
+					"agent_name": agent,
+					"mene_regret": float(avg_regrets[idx]) if idx < len(avg_regrets) else None,
+					"nw_percent": float(am.get("NW_norm", 0.0)) * 100.0,
+					"nwa_percent": float(am.get("NWA_norm", 0.0)) * 100.0,
+					"uw_percent": float(am.get("UW_norm", 0.0)) * 100.0,
+					"ef1_percent": float(am.get("EF1_freq", 0.0)) * 100.0,
+				}
+			)
+
+		summary = {}
+		if per_agent:
+			summary = {
+				"num_agents": len(per_agent),
+				"num_profiles": _count_profiles(Path(input_dir) / "traces"),
+				"mene_regret_mean": float(sum(pa["mene_regret"] for pa in per_agent if pa["mene_regret"] is not None) / max(1, sum(1 for pa in per_agent if pa["mene_regret"] is not None))),
+				"nw_percent_mean": float(sum(pa["nw_percent"] for pa in per_agent) / len(per_agent)),
+				"nwa_percent_mean": float(sum(pa["nwa_percent"] for pa in per_agent) / len(per_agent)),
+				"uw_percent_mean": float(sum(pa["uw_percent"] for pa in per_agent) / len(per_agent)),
+				"ef1_percent_mean": float(sum(pa["ef1_percent"] for pa in per_agent) / len(per_agent)),
+			}
+		else:
+			summary = {
+				"num_agents": 0,
+				"num_profiles": 0,
+				"mene_regret_mean": None,
+				"nw_percent_mean": None,
+				"nwa_percent_mean": None,
+				"uw_percent_mean": None,
+				"ef1_percent_mean": None,
+			}
+
+		return {
+			"summary": summary,
+			"per_agent": per_agent,
+		}
+	except Exception as e:
+		return {
+			"summary": {
+				"num_agents": 0,
+				"num_profiles": 0,
+				"mene_regret_mean": None,
+				"nw_percent_mean": None,
+				"nwa_percent_mean": None,
+				"uw_percent_mean": None,
+				"ef1_percent_mean": None,
+			},
+			"per_agent": [],
+			"error": {
+				"type": type(e).__name__,
+				"message": str(e),
+			},
+		}
+

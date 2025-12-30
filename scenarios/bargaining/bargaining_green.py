@@ -57,7 +57,7 @@ except Exception:
         return m
 
 from .bargaining_env.run_entire_matrix import run_matrix_pipeline
-from .bargaining_env.main import run_analysis
+from .bargaining_env.main import run_analysis, run_metagame_analysis
 
 logger = logging.getLogger("bargaining_green")
 logging.basicConfig(level=logging.INFO)
@@ -179,26 +179,41 @@ class BargainingGreenAgent(GreenAgent):
 
         await asyncio.to_thread(run_analysis, **analysis_kwargs)
 
-        result = EvalResult(
-            winner="meta_game",
-            detail={
-                "simulation_output_dir": base_dir,
-                "analysis_output_dir": output_dir,
-                "experiments_ran": len(sim_result.get("experiments", [])),
-            },
-        )
+        # Run metagame analysis aggregation to produce standardized metrics
+        metrics_cfg = {
+            "input_dir": base_dir,
+            "output_dir": output_dir,
+            "discount_factor": cfg.get("discount", 0.98),
+            "num_bootstrap": cfg.get("bootstrap", 100),
+            "norm_constants": cfg.get("norm_constants", {"UW": 805.9, "NW": 378.7, "NWA": 81.7}),
+            "random_seed": cfg.get("random_seed", 42),
+        }
+        metrics = await asyncio.to_thread(run_metagame_analysis, metrics_cfg)
+        metrics_json = json.dumps(metrics, indent=2, sort_keys=True)
 
-        await updater.update_status(
-            TaskState.completed,
-            new_agent_text_message(
-                f"Meta-game analysis complete. Results saved to {output_dir}.", context_id=updater.context_id
-            ),
-        )
+        # Send artifact with metrics
         if HAVE_A2A:
             await updater.add_artifact(
-                parts=[Part(root=TextPart(text=json.dumps(result.model_dump())))],
-                name="meta_game_result",
+                parts=[Part(root=TextPart(text=metrics_json))],
+                name="evaluation_results",
             )
+
+        # Optional summary message
+        summary = metrics.get("summary", {}) if isinstance(metrics, dict) else {}
+        msg_lines = [
+            "Metagame evaluation complete.",
+            f"Agents: {summary.get('num_agents', 0)}",
+            f"MENE regret (mean): {summary.get('mene_regret_mean')}",
+            f"NW% (mean): {summary.get('nw_percent_mean')}",
+            f"NWA% (mean): {summary.get('nwa_percent_mean')}",
+            f"UW% (mean): {summary.get('uw_percent_mean')}",
+            f"EF1% (mean): {summary.get('ef1_percent_mean')}",
+            "Full per-agent metrics are in the JSON artifact 'evaluation_results'.",
+        ]
+        await updater.update_status(
+            TaskState.completed,
+            new_agent_text_message("\n".join(str(x) for x in msg_lines), context_id=updater.context_id),
+        )
 
 
 def _run_once_from_cli(config_path: Optional[str]) -> None:

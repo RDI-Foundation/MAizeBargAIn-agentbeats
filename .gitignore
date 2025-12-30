@@ -5,3 +5,8 @@ OPEN_AI_API_KEY.txt
 .venv/
 __pycache__/
 *.pyc
+
+# Runtime data directories
+bargaining_llm_traces/
+bargaining_runs/
+meta_game_analysis/

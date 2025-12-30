@@ -24,22 +24,27 @@ except Exception:
 	pyspiel = None  # type: ignore
 
 
-class PolicyModel(nn.Module):  # type: ignore
-	def __init__(self, n_actions: int, hidden_size: int = 256):
-		super().__init__()
-		self.lin1 = nn.LazyLinear(hidden_size)
-		self.lin2 = nn.Linear(hidden_size, hidden_size)
-		# Match checkpoint naming "policy_head.*"
-		self.policy_head = nn.Linear(hidden_size, n_actions)
+if torch is not None and nn is not None:
+	class PolicyModel(nn.Module):  # type: ignore
+		def __init__(self, n_actions: int, hidden_size: int = 256):
+			super().__init__()
+			self.lin1 = nn.LazyLinear(hidden_size)
+			self.lin2 = nn.Linear(hidden_size, hidden_size)
+			# Match checkpoint naming "policy_head.*"
+			self.policy_head = nn.Linear(hidden_size, n_actions)
 
-	def forward(self, x, action_mask):  # type: ignore
-		x = self.lin1(x.float())
-		x = F.relu(x)
-		out = self.lin2(x) + x
-		out = F.relu(out)
-		out = self.policy_head(out)
-		out = torch.masked_fill(out, ~action_mask.bool(), -1e9)
-		return out
+		def forward(self, x, action_mask):  # type: ignore
+			x = self.lin1(x.float())
+			x = F.relu(x)
+			out = self.lin2(x) + x
+			out = F.relu(out)
+			out = self.policy_head(out)
+			out = torch.masked_fill(out, ~action_mask.bool(), -1e9)
+			return out
+else:
+	class PolicyModel:  # type: ignore
+		def __init__(self, *args, **kwargs):
+			raise ImportError("PyTorch is required for NFSP (torch not available).")
 
 
 class NFSPAgentWrapper:
@@ -58,7 +63,7 @@ class NFSPAgentWrapper:
 		max_rounds: int = 3,
 		debug: bool = False,
 	) -> None:
-		if torch is None:
+		if torch is None or nn is None:
 			raise RuntimeError("PyTorch not available; NFSP requires torch to run.")
 		if pyspiel is None:
 			raise RuntimeError("OpenSpiel (pyspiel) not available; NFSP agent requires it.")
