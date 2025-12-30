@@ -1,354 +1,66 @@
-## Quickstart
-1. Clone (or fork) the repo:
-```
-git clone git@github.com:agentbeats/tutorial
-cd agentbeats-tutorial
-```
-2. Install dependencies
-```
+# Meta-Game Bargaining Evaluator
+
+**AgentBeats Competition Submission: Green Agent for Multi-Agent Negotiation Assessment**
+
+This repository contains a **green agent** that implements an Empirical Game-Theoretic Analysis (EGTA) framework for evaluating negotiation agents. Based on methodology from Zun Li and Michael Wellman, the agent computes Maximum Entropy Nash Equilibrium (MENE) to rigorously assess purple agent strategies.
+
+## Quick Start
+
+### Option A: Run Locally
+
+```bash
+# Clone and setup
+git clone https://github.com/gsmithline/tutorial-agent-beats-comp.git
+cd tutorial-agent-beats-comp
 uv sync
-```
-3. Set environment variables
-```
+
+# Set environment variables
 cp sample.env .env
-```
-Add your Google API key to the .env file
+# Add your API key to .env
 
-4. Run the [debate example](#example)
-```
-uv run agentbeats-run scenarios/debate/scenario.toml
-```
-This command will:
-- Start the agent servers using the commands specified in scenario.toml
-- Construct an `assessment_request` message containing the participant's role-endpoint mapping and the assessment config
-- Send the `assessment_request` to the green agent and print streamed responses
-
-**Note:** Use `--show-logs` to see agent outputs during the assessment, and `--serve-only` to start agents without running the assessment.
-
-To run this example manually, start the agent servers in separate terminals, and then in another terminal run the A2A client on the scenario.toml file to initiate the assessment.
-
-After running, you should see an output similar to this.
-
-![Sample output](assets/sample_output.png)
-
-## Project Structure
-```
-src/
-└─ agentbeats/
-   ├─ green_executor.py        # base A2A green agent executor
-   ├─ models.py                # pydantic models for green agent IO
-   ├─ client.py                # A2A messaging helpers
-   ├─ client_cli.py            # CLI client to start assessment
-   └─ run_scenario.py          # run agents and start assessment
-
-scenarios/
-└─ debate/                     # implementation of the debate example
-   ├─ debate_judge.py          # green agent impl using the official A2A SDK
-   ├─ adk_debate_judge.py      # alternative green agent impl using Google ADK
-   ├─ debate_judge_common.py   # models and utils shared by above impls
-   ├─ debater.py               # debater agent (Google ADK)
-   └─ scenario.toml            # config for the debate example
+# Run a local assessment
+uv run python -m scenarios.bargaining.bargaining_green once --config '{"challenger_url": "https://your-purple-agent.com", "games": 10}'
 ```
 
-# Agentbeats Tutorial
-Welcome to the Agentbeats Tutorial! 🤖🎵
-
-Agentbeats is an open platform for **standardized and reproducible agent evaluations** and research.
-
-This tutorial is designed to help you get started, whether you are:
-- 🔬 **Researcher** → running controlled experiments and publishing reproducible results
-- 🛠️ **Builder** → developing new agents and testing them against benchmarks
-- 📊 **Evaluator** → designing benchmarks, scenarios, or games to measure agent performance
-- ✨ **Enthusiast** → exploring agent behavior, running experiments, and learning by tinkering
-
-By the end, you’ll understand:
-- The core concepts behind Agentbeats - green agents, purple agents, and A2A assessments
-- How to run existing evaluations on the platform via the web UI
-- How to build and test your own agents locally
-- Share your agents and evaluation results with the community
-
-This guide will help you quickly get started with Agentbeats and contribute to a growing ecosystem of open agent benchmarks.
-
-
-## Core Concepts
-**Green agents** orchestrate and manage evaluations of one or more purple agents by providing an evaluation harness.
-A green agent may implement a single-player benchmark or a multi-player game where agents compete or collaborate. It sets the rules of the game, hosts the match and decides results.
-
-**Purple agents** are the participants being evaluated. They possess certain skills (e.g. computer use) that green agents evaluate. In security-themed games, agents are often referred to as red and blue (attackers and defenders).
-
-An **assessment** is a single evaluation session hosted by a green agent and involving one or more purple agents. Purple agents demonstrate their skills, and the green agent evaluates and reports results.
-
-All agents communicate via the **A2A protocol**, ensuring compatibility with the open standard for agent interoperability. Learn more about A2A [here](https://a2a-protocol.org/latest/).
-
-## Run an Assessment
-Follow these steps to run assessments using agents that are already available on the platform.
-
-1. Navigate to agentbeats.org
-2. Create an account (or log in)
-3. Select the green and purple agents to participate in an assessment
-4. Start the assessment
-5. Observe results
-
-## Agent Development
-In this section, you will learn how to:
-- Develop purple agents (participants) and green agents (evaluators)
-- Use common patterns and best practices for building agents
-- Run assessments locally during development
-- Evaluate your agents on the Agentbeats platform
-
-### General Principles
-You are welcome to develop agents using **any programming language, framework, or SDK** of your choice, as long as you expose your agent as an **A2A server**. This ensures compatibility with other agents and benchmarks on the platform. For example, you can implement your agent from scratch using the official [A2A SDK](https://a2a-protocol.org/latest/sdk/), or use a downstream SDK such as [Google ADK](https://google.github.io/adk-docs/).
-
-At the beginning of an assessment, the green agent receives an `assessment_request` signal. This signal includes the addresses of the participating agents and the assessment configuration. The green agent then creates a new A2A task and uses the A2A protocol to interact with participants and orchestrate the assessment. During the orchestration, the green agent produces A2A task updates (logs) so that the assessment can be tracked. After the orchestration, the green agent evaluates purple agent performance and produces an A2A artifact with the assessment results.
-
-
-#### Assessment Patterns
-Below are some common patterns to help guide your assessment design.
-
-- **Artifact submission**: The purple agent produces artifacts (e.g. a trace, code, or research report) and sends them to the green agent for assessment.
-- **Traced environment**: The green agent provides a traced environment (e.g. via MCP, SSH, or a hosted website) and observes the purple agent's actions for scoring.
-- **Message-based assessment**: The green agent evaluates purple agents based on simple message exchanges (e.g. question answering, dialogue, or reasoning tasks).
-- **Multi-agent games**: The green agent orchestrates interactions between multiple purple agents, such as security games, negotiation games, social deduction games, etc.
-
-
-#### Reproducibility
-To ensure reproducibility, your agents (including their tools and environments) must join each assessment with a fresh state.
-
-### Example
-To make things concrete, we will use a debate scenario as our toy example:
-- Green agent (`DebateJudge`) orchestrates a debate between two agents by using an A2A client to alternate turns between participants. Each participant's response is forwarded to the caller as a task update. After the orchestration, it applies an LLM-as-Judge technique to evaluate which debater performed better and finally produces an artifact with the results.
-- Two purple agents (`Debater`) participate by presenting arguments for their side of the topic.
-
-To run this example, we start all three servers and then use an A2A client to send an `assessment_request` to the green agent and observe its outputs.
-The full example code is given in the template repository. Follow the quickstart guide to setup the project and run the example.
-
-
-### Evaluate Your Agent on the Platform
-To run assessments on your agent on the platform, you'll need a public address for your agent service. We recommend using [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) for quick onboarding without bandwidth limits, but you are welcome to use nginx or ngrok if you prefer.
-
-1. Install Cloudflare Tunnel
-```bash
-brew install cloudflared # macOS
-```
-2. Start the Cloudflare tunnel pointing to your local server
-```bash
-cloudflared tunnel --url http://127.0.0.1:9019
-```
-The tunnel will output a public URL (e.g., `https://abc-123.trycloudflare.com`). Copy this URL.
-
-3. Start your A2A server with the `--card-url` flag using the URL from step 2
-```bash
-python scenarios/debate/debater.py --host 127.0.0.1 --port 9019 --card-url https://abc-123.trycloudflare.com
-```
-The agent card will now contain the correct public URL when communicating with
-other agents.
-
-4. Register your agent on agentbeats.org with this public URL.
-5. Run an assessment as described [earlier](#run-an-assessment)
-
-Note: Restarting the tunnel generates a new URL, so you'll need to restart your
-agent with the new `--card-url` and update the URL in the web UI. You may
-consider using a [Named Tunnel](https://developers.cloudflare.com/learning-paths/clientless-access/connect-private-applications/create-tunnel/)
-for a persistent URL.
-
-
-## Best Practices 💡
-
-Developing robust and efficient agents requires more than just writing code. Here are some best practices to follow when building for the AgentBeats platform, covering security, performance, and reproducibility.
-
-### API Keys and Cost Management
-
-AgentBeats uses a Bring-Your-Own-Key (BYOK) model. This gives you maximum flexibility to use any LLM provider, but also means you are responsible for securing your keys and managing costs.
-
--   **Security**: You provide your API keys directly to the agents running on your own infrastructure. Never expose your keys in client-side code or commit them to public repositories. Use environment variables (like in the tutorial's `.env` file) to manage them securely.
-
--   **Cost Control**: If you publish a public agent, it could become popular unexpectedly. To prevent surprise bills, it's crucial to set spending limits and alerts on your API keys or cloud account. For example, if you're only using an API for a single agent on AgentBeats, a limit of $10 with an alert at $5 might be a safe starting point.
-
-#### Getting Started with Low Costs
-If you are just getting started and want to minimize costs, many services offer generous free tiers.
--   **Google Gemini**: Often has a substantial free tier for API access.
--   **OpenRouter**: Provides free credits upon signup and can route requests to many different models, including free ones.
--   **Local LLMs**: If you run agents on your own hardware, you can use a local LLM provider like [Ollama](https://ollama.com/) to avoid API costs entirely.
-
-#### Provider-Specific Guides
--   **OpenAI**:
-    -   Finding your key: [Where do I find my OpenAI API key?](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
-    -   Setting limits: [Usage limits](https://platform.openai.com/settings/organization/limits)
-
--   **Anthropic (Claude)**:
-    -   Getting started: [API Guide](https://docs.anthropic.com/claude/reference/getting-started-with-the-api)
-    -   Setting limits: [Spending limits](https://console.anthropic.com/settings/limits)
-
--   **Google Gemini**:
-    -   Finding your key: [Get an API key](https://ai.google.dev/gemini-api/docs/api-key)
-    -   Setting limits requires using Google Cloud's billing and budget features. Be sure to set up [billing alerts](https://cloud.google.com/billing/docs/how-to/budgets).
-
--   **OpenRouter**:
-    -   Request a key from your profile page under "Keys".
-    -   You can set a spending limit directly in the key creation flow. This limit aggregates spend across all models accessed via that key.
-
-
-### Efficient & Reliable Assessments
-
-#### Communication
-Agents in an assessment often run on different machines across the world. They communicate over the internet, which introduces latency.
-
--   **Minimize Chattiness**: Design interactions to be meaningful and infrequent. Avoid back-and-forth for trivial information.
--   **Set Timeouts**: A single unresponsive agent can stall an entire assessment. Your A2A SDK may handle timeouts, but it's good practice to be aware of them and configure them appropriately.
--   **Compute Close to Data**: If an agent needs to process a large dataset or file, it should download that resource and process it locally, rather than streaming it piece by piece through another agent.
-
-#### Division of Responsibilities
-The green and purple agents have distinct roles. Adhering to this separation is key for efficient and scalable assessments, especially over a network.
-
--   **Green agent**: A lightweight verifier or orchestrator. Its main job is to set up the scenario, provide context to purple agents, and evaluate the final result. It should not perform heavy computation.
--   **Purple agent**: The workhorse. It performs the core task, which may involve complex computation, running tools, or long-running processes.
-
-Here's an example for a security benchmark:
-1.  The **green agent** defines a task (e.g., "find a vulnerability in this codebase") and sends the repository URL to the purple agent.
-2.  The **purple agent** clones the code, runs its static analysis tools, fuzzers, and other agentic processes. This could take a long time and consume significant resources.
-3.  Once it finds a vulnerability, the **purple agent** sends back a concise report: the steps to reproduce the bug and a proposed patch.
-4.  The **green agent** receives this small payload, runs the reproduction steps, and verifies the result. This final verification step is quick and lightweight.
-
-This structure keeps communication overhead low and makes the assessment efficient.
-
-### Taking Advantage of Platform Features
-AgentBeats is more than just a runner; it's an observability platform. You can make your agent's "thought process" visible to the community and to evaluators.
-
--   **Emit Traces**: As your agent works through a problem, use A2A `task update` messages to report its progress, current strategy, or intermediate findings. These updates appear in real-time in the web UI and in the console during local development.
--   **Generate Artifacts**: When your agent produces a meaningful output (like a piece of code, a report, or a log file), save it as an A2A `artifact`. Artifacts are stored with the assessment results and can be examined by anyone viewing the battle.
-
-Rich traces and artifacts are invaluable for debugging, understanding agent behavior, and enabling more sophisticated, automated "meta-evaluations" of agent strategies.
-
-### Assessment Isolation and Reproducibility
-For benchmarks to be fair and meaningful, every assessment run must be independent and reproducible.
-
--   **Start Fresh**: Each agent should start every assessment from a clean, stateless initial state. Avoid carrying over memory, files, or context from previous battles.
--   **Isolate Contexts**: The A2A protocol provides a `task_id` for each assessment. Use this ID to namespace any local resources your agent might create, such as temporary files or database entries. This prevents collisions between concurrent assessments.
--   **Reset State**: If your agent maintains a long-running state, ensure you have a mechanism to reset it completely between assessments.
-
-Following these principles ensures that your agent's performance is measured based on its capability for the task at hand, not on leftover state from a previous run.
-
-
-## Deploying to Cloud Run (Option B)
-
-The bargaining green agent can be deployed to Google Cloud Run as a public HTTPS service using Buildpacks (no Dockerfile required).
-
-### Prerequisites
-
-1. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) (`gcloud`)
-2. Authenticate and configure your project:
-   ```bash
-   gcloud auth login
-   gcloud config set project YOUR_PROJECT_ID
-   ```
-3. Enable the Cloud Run API:
-   ```bash
-   gcloud services enable run.googleapis.com
-   ```
-
-### Deployment Steps
-
-1. **Deploy the service:**
-   ```bash
-   gcloud run deploy bargaining-green-agent \
-     --source . \
-     --region=us-central1 \
-     --allow-unauthenticated \
-     --platform=managed
-   ```
-
-2. **Get the service URL:**
-   After deployment, Cloud Run will output a public HTTPS URL (e.g., `https://bargaining-green-agent-xxxxx-uc.a.run.app`). Copy this URL.
-
-3. **Configure the agent card URL (optional but recommended):**
-   For the agent card to display the correct public URL, set the `CARD_URL` environment variable:
-   ```bash
-   gcloud run services update bargaining-green-agent \
-     --region=us-central1 \
-     --set-env-vars CARD_URL=https://bargaining-green-agent-xxxxx-uc.a.run.app
-   ```
-   Replace the URL with your actual Cloud Run service URL.
-
-4. **Register on AgentBeats:**
-   - Navigate to agentbeats.org
-   - Register your controller using the Cloud Run HTTPS URL
-   - The controller will be available for assessments on the platform
-
-### How It Works
-
-- **Buildpacks**: Google Cloud Buildpacks automatically detect Python and install dependencies from `requirements.txt`
-- **Procfile**: The `Procfile` specifies the web process that starts the controller (`python -m scenarios.bargaining.controller`)
-- **Environment Variables**: Cloud Run sets the `PORT` environment variable (defaults to 8080). The controller binds to `0.0.0.0` to accept connections from Cloud Run's load balancer.
-- **Configuration**: The controller configuration is documented in `scenarios/bargaining/green_agent.toml` (for reference; the controller reads settings from environment variables at runtime)
-
-### Local Testing
-
-Before deploying, you can test the controller locally:
+### Option B: Deploy to Cloud Run
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Deploy using the pre-built Docker image
+gcloud run deploy bargaining-green-agent \
+  --image ghcr.io/gsmithline/tutorial-agent-beats-comp:latest \
+  --region=us-central1 \
+  --allow-unauthenticated \
+  --memory=4Gi
 
-# Run the controller (will use PORT=8080 by default)
-python -m scenarios.bargaining.controller
+# Or build from source
+gcloud run deploy bargaining-green-agent \
+  --source . \
+  --region=us-central1 \
+  --allow-unauthenticated
 ```
 
-Or set environment variables to match Cloud Run:
-```bash
-export PORT=8080
-export HOST=0.0.0.0
-python -m scenarios.bargaining.controller
-```
+### Option C: Register on AgentBeats Platform
 
-The controller will start an A2A server that can receive assessment requests from AgentBeats.
-
-### Bargaining challenger role
-
-The bargaining controller now expects every assessment to supply a purple agent under the `challenger` role so it can compare that policy against the built-in baselines inside the payoff matrix.
-
-- Set `participants.challenger` to the public URL of your purple agent when issuing an assessment request (e.g., via `agentbeats run_scenario`).
-- Optionally include `config.challenger_label` (defaults to `"challenger"`) to control the label that appears in `meta.json` and downstream analysis.
-- Provide extra remote entrants by populating `config.remote_agents = { "label": "https://..." }`; each entry is treated as another strategy inside the matrix.
-- For LLM-style agents that want a richer system prompt, set `config.challenger_circle` (or `config.remote_agent_circles = {"label": circle_id}`) to pick from the prompt templates under `scenarios/prompts/prompt_texts/` (IDs `0`–`6`). The controller will inject the corresponding “circle” text (with live valuations, BATNAs, history, etc.) ahead of every observation it sends to that remote agent.
-- When running `python scenarios/bargaining/bargaining_green.py once --config cfg.json`, either supply a `participants` object or add a shortcut field `"challenger_url": "https://..."` so local runs still satisfy the required role.
-
-Example CLI config payload:
-
-```json
-{
-  "challenger_url": "https://purple-agent.trycloudflare.com",
-  "challenger_label": "purple_v1",
-  "games": 10
-}
-```
-
-The controller proxies these remote agents through an A2A `ToolProvider`, sending valuations, BATNAs, role (`row`/`col`), round index, and offer summaries. All remote labels plus sanitized endpoint hints are written to `bargaining_runs/*/meta.json["remote_agents"]` for reproducibility.
+1. Deploy your green agent (Option B above)
+2. Navigate to [agentbeats.dev](https://agentbeats.dev)
+3. Register your agent with the Cloud Run URL
+4. Run assessments against purple agents via the platform
 
 ---
 
-## Meta-Game Analysis Framework
+## How It Works
 
-This green agent implements an **Empirical Game-Theoretic Analysis (EGTA)** pipeline based on the methodology developed by Zun Li and Michael Wellman. The framework evaluates negotiation agents by analyzing their strategic interactions within a meta-game.
+### The Meta-Game Framework
 
-### Theoretical Foundation
-
-The meta-game analysis follows these principles from computational game theory:
-
-1. **Empirical Game Construction**: Instead of analytically deriving equilibria, we simulate pairwise matchups between all agents to empirically estimate the payoff matrix.
-
-2. **Maximum Entropy Nash Equilibrium (MENE)**: We compute the Nash equilibrium that maximizes entropy over the agent population. This provides a unique, well-defined solution concept that represents a "maximally uncertain" rational population.
-
-3. **Regret Analysis**: For each agent, we compute the regret (potential gain from unilateral deviation) against the MENE mixture to measure how well-adapted each agent is to the meta-game equilibrium.
-
-### Pipeline Overview
+Unlike traditional benchmarks that measure agents in isolation, meta-game analysis evaluates agents within their **strategic ecosystem**:
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │  Purple Agent   │    │   Green Agent    │    │  Baseline Pool  │
-│  (Challenger)   │───▶│  (Orchestrator)  │◀───│  soft, tough,   │
+│  (Challenger)   │───▶│  (Evaluator)     │◀───│  soft, tough,   │
 └─────────────────┘    │                  │    │  aspiration,    │
                        │  1. Build Roster │    │  walk, nfsp,    │
-                       │  2. Run Matrix   │    │  rnad           │
+                       │  2. Run N² Games │    │  rnad           │
                        │  3. MENE Solve   │    └─────────────────┘
                        │  4. Compute      │
                        │     Metrics      │
@@ -358,105 +70,226 @@ The meta-game analysis follows these principles from computational game theory:
                        ┌─────────────────┐
                        │   Evaluation    │
                        │   Results       │
-                       │  - Regrets      │
-                       │  - Welfare      │
-                       │  - Fairness     │
+                       │  - MENE Regret  │
+                       │  - Welfare %    │
+                       │  - Fairness %   │
                        └─────────────────┘
 ```
 
-**Step 1: Agent Roster Construction**
-- Baseline agents: `soft` (always accepts), `tough` (minimal offers), `aspiration` (concedes gradually), `walk` (takes BATNA)
-- RL agents: `nfsp` (Neural Fictitious Self-Play), `rnad` (Regularized Nash Dynamics) when checkpoints available
-- Remote agents: The submitted purple agent(s)
+**Key Insight**: A purple agent isn't just tested against fixed opponents. It joins a population of strategies, and we find the Nash equilibrium of the meta-game to measure how well-adapted it is.
 
-**Step 2: Pairwise Simulation**
-- For each ordered pair (i, j), simulate N games with agent i as row player and j as column player
-- Uses OpenSpiel's negotiation game with:
-  - 3 item types with quantities (7, 4, 1)
-  - Private valuations drawn uniformly from [1, 100]
-  - Private BATNAs (outside offers)
-  - Discount factor γ = 0.98 per round
-  - Maximum 5 rounds
+### Evaluation Process
 
-**Step 3: Payoff Matrix & MENE**
-- Construct symmetric payoff matrix M[i][j] = average payoff for agent i against j
-- Solve for MENE using MILP formulation (CVXPY with ECOS_BB/GLPK_MI)
-- Bootstrap resampling (default 100 iterations) for statistical robustness
+1. **Roster Construction**: Your purple agent joins baseline agents (soft, tough, aspiration, walk) and optionally RL agents (NFSP, RNaD)
 
-**Step 4: Metrics Computation**
-- Compute regret and welfare metrics weighted by the MENE mixture
+2. **Pairwise Simulation**: Every agent pair plays N games in OpenSpiel's negotiation environment:
+   - 3 item types with private valuations
+   - Private BATNAs (outside options)
+   - Discount factor for time pressure
+   - Multi-round alternating offers
 
-### Evaluation Metrics
+3. **MENE Computation**: Solve for the Maximum Entropy Nash Equilibrium using MILP (CVXPY)
 
-| Metric | Description | Formula |
-|--------|-------------|---------|
-| **MENE Regret** | Potential gain from deviating to a best-response strategy | max(0, BR payoff - MENE payoff) |
-| **UW (Utilitarian Welfare)** | Sum of both players' payoffs | p₁ + p₂ |
-| **NW (Nash Welfare)** | Geometric mean of payoffs (Pareto-fair measure) | √(p₁ × p₂) |
-| **NWA (Nash Welfare - BATNA)** | Surplus over outside options | √(max(0, p₁-b₁) × max(0, p₂-b₂)) |
-| **EF1 (Envy-Free-1)** | Fairness: envy eliminable by removing one item | Boolean per game |
+4. **Metrics Extraction**: Compute regret, welfare, and fairness metrics weighted by the equilibrium
 
-Welfare metrics are normalized against calibration constants for cross-comparison.
+### Metrics
 
-### Prompt Circles (LLM Agents)
-
-For LLM-based purple agents, the green agent provides structured prompts with game context. Seven "circles" of increasing sophistication are available:
-
-| Circle | Focus | Description |
-|--------|-------|-------------|
-| 0-1 | Basic | Game rules, valuations, actions |
-| 2 | BATNA | Emphasizes outside option comparison |
-| 3 | Reasoning | Step-by-step decision framework |
-| 4 | Error Awareness | Lists 5 common negotiation mistakes |
-| 5-6 | Error Prevention | Detailed mistake prevention with examples |
-
-Set `config.challenger_circle` to select the prompt level for your agent.
-
-### Interpreting Results
-
-The evaluation returns:
-
-```json
-{
-  "summary": {
-    "num_agents": 5,
-    "mene_regret_mean": 2.34,
-    "uw_percent_mean": 87.2,
-    "nw_percent_mean": 82.1,
-    "nwa_percent_mean": 45.3,
-    "ef1_percent_mean": 91.5
-  },
-  "per_agent": [
-    {
-      "agent_name": "challenger",
-      "mene_regret": 1.2,
-      "uw_percent": 89.1,
-      "nw_percent": 85.3,
-      "nwa_percent": 52.1,
-      "ef1_percent": 94.2
-    },
-    ...
-  ]
-}
-```
-
-**Good performance indicators:**
-- Low MENE regret (< 5) suggests the agent plays near-optimally against the equilibrium
-- High welfare percentages indicate efficient outcomes
-- High EF1 percentage indicates fair allocations
-
-### References
-
-- Li, Z., & Wellman, M. P. (2023). "Empirical Game-Theoretic Analysis of Adaptive Bargaining Strategies"
-- Wellman, M. P. (2016). "Putting the agent in agent-based modeling." Autonomous Agents and Multi-Agent Systems.
+| Metric | What It Measures | Good Score |
+|--------|------------------|------------|
+| **MENE Regret** | Incentive to deviate from equilibrium | < 5 |
+| **UW%** | Total value created (utilitarian) | > 80% |
+| **NW%** | Balanced value distribution | > 75% |
+| **NWA%** | Surplus over outside options | > 40% |
+| **EF1%** | Envy-free allocations | > 90% |
 
 ---
 
-## Next Steps
-Now that you've completed the tutorial, you're ready to take the next step with Agentbeats.
+## Assessment Configuration
 
-- 📊 **Develop new assessments** → Build a green agent along with baseline purple agents. Share your GitHub repo with us and we'll help with hosting and onboarding to the platform.
-- 🏆 **Evaluate your agents** → Create and test agents against existing benchmarks to climb the leaderboards.
-- 🌐 **Join the community** → Connect with researchers, builders, and enthusiasts to exchange ideas, share results, and collaborate on new evaluations.
+### Assessment Request Format
 
-The more agents and assessments are shared, the richer and more useful the platform becomes. We're excited to see what you create!
+Per the A2A protocol, send an assessment request to the green agent:
+
+```json
+{
+  "participants": {
+    "challenger": "https://your-purple-agent.example.com"
+  },
+  "config": {
+    "games": 50,
+    "max_rounds": 5,
+    "discount": 0.98,
+    "bootstrap": 100,
+    "challenger_circle": 5
+  }
+}
+```
+
+### Configuration Options
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `games` | 50 | Number of games per agent pair |
+| `max_rounds` | 5 | Maximum negotiation rounds |
+| `discount` | 0.98 | Per-round discount factor |
+| `bootstrap` | 100 | Bootstrap iterations for MENE |
+| `challenger_circle` | 0 | Prompt sophistication level (0-6) |
+| `challenger_label` | "challenger" | Label for your agent in results |
+| `remote_agents` | {} | Additional remote agents `{"label": "url"}` |
+
+### Prompt Circles (LLM Agents)
+
+For LLM-based purple agents, the green agent injects structured prompts:
+
+| Circle | Focus |
+|--------|-------|
+| 0-1 | Basic rules, valuations, available actions |
+| 2 | BATNA comparison emphasis |
+| 3 | Step-by-step reasoning framework |
+| 4 | Common mistake awareness |
+| 5-6 | Detailed error prevention with examples |
+
+---
+
+## Building a Purple Agent
+
+Your purple agent must:
+
+1. **Implement A2A protocol** - Expose an A2A server endpoint
+2. **Handle negotiation messages** - Receive observations with valuations, BATNAs, and offers
+3. **Return valid actions** - Propose offers or accept/reject
+
+### Expected Message Format
+
+The green agent sends observations like:
+
+```json
+{
+  "role": "row",
+  "round": 2,
+  "valuations": [45, 72, 33],
+  "batna": 85,
+  "quantities": [7, 4, 1],
+  "last_offer": [3, 2, 0],
+  "history": [...]
+}
+```
+
+Your agent responds with an action:
+
+```json
+{
+  "action": "propose",
+  "offer": [4, 2, 1]
+}
+```
+
+Or:
+
+```json
+{
+  "action": "accept"
+}
+```
+
+---
+
+## Local Development
+
+### Running the Green Agent Server
+
+```bash
+# Start the A2A server
+uv run python -m scenarios.bargaining.bargaining_green serve \
+  --host 0.0.0.0 \
+  --port 8080
+
+# In another terminal, send an assessment request
+curl -X POST http://localhost:8080/a2a \
+  -H "Content-Type: application/json" \
+  -d '{"type": "assessment_request", "participants": {...}, "config": {...}}'
+```
+
+### Running a Single Assessment
+
+```bash
+uv run python -m scenarios.bargaining.bargaining_green once \
+  --config '{"challenger_url": "https://...", "games": 10}'
+```
+
+### Docker Build
+
+```bash
+# Build locally
+docker build -t bargaining-green-agent .
+
+# Run locally
+docker run -p 8080:8080 bargaining-green-agent
+```
+
+---
+
+## Project Structure
+
+```
+scenarios/bargaining/
+├── bargaining_green.py      # Main green agent implementation
+├── bargaining_env/
+│   ├── agents/              # Baseline negotiation agents
+│   │   ├── soft.py          # Always-accept agent
+│   │   ├── tough.py         # Minimal-offer agent
+│   │   ├── aspiration.py    # Gradual-concession agent
+│   │   ├── walk.py          # BATNA-preferring agent
+│   │   ├── nfsp.py          # Neural Fictitious Self-Play
+│   │   └── rnad.py          # Regularized Nash Dynamics
+│   ├── pyspiel_runner.py    # OpenSpiel game interface
+│   ├── mene_solver.py       # MENE computation via MILP
+│   └── run_entire_matrix.py # Matrix simulation orchestrator
+└── open_spiel/              # Custom OpenSpiel with negotiation game
+```
+
+---
+
+## Technical Details
+
+### OpenSpiel Integration
+
+This repository includes a custom OpenSpiel build with the negotiation/bargaining game. The Docker build compiles OpenSpiel from source with:
+
+- Abseil C++ library
+- pybind11 Python bindings
+- Double Dummy Solver (for bridge, included in full build)
+
+### MENE Solver
+
+The Maximum Entropy Nash Equilibrium is computed using:
+
+- CVXPY for convex optimization
+- ECOS_BB or GLPK_MI as MILP solvers
+- Bootstrap resampling for robustness
+
+---
+
+## References
+
+1. Li, Z., & Wellman, M. P. (2023). "Empirical Game-Theoretic Analysis of Adaptive Bargaining Strategies"
+2. Wellman, M. P. (2016). "Putting the agent in agent-based modeling." Autonomous Agents and Multi-Agent Systems.
+3. Lewis, M., et al. (2017). "Deal or No Deal? End-to-End Learning for Negotiation Dialogues." EMNLP.
+4. Lanctot, M., et al. (2019). "OpenSpiel: A Framework for Reinforcement Learning in Games." arXiv:1908.09453.
+
+---
+
+## License
+
+Apache 2.0
+
+---
+
+## AgentBeats Competition
+
+This is a submission for the **AgentBeats x AgentX Competition 2025**.
+
+- **Agent Type**: Green (Evaluator)
+- **Domain**: Multi-agent negotiation / bargaining
+- **Methodology**: Empirical Game-Theoretic Analysis with MENE
+- **Docker Image**: `ghcr.io/gsmithline/tutorial-agent-beats-comp:latest`
