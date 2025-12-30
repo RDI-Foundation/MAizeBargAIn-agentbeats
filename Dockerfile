@@ -29,6 +29,7 @@ RUN echo "=== Cloning dependencies ===" && \
     git clone --depth 1 https://github.com/abseil/abseil-cpp.git open_spiel/abseil-cpp && \
     git clone --depth 1 https://github.com/pybind/pybind11.git pybind11 && \
     git clone --depth 1 https://github.com/pybind/pybind11_abseil.git open_spiel/pybind11_abseil && \
+    git clone -b develop --depth 1 https://github.com/jblespiau/dds.git open_spiel/games/bridge/double_dummy_solver && \
     echo "=== Building OpenSpiel ===" && \
     export CXX=g++ && \
     python setup.py build_ext --inplace 2>&1 && \
@@ -37,7 +38,7 @@ RUN echo "=== Cloning dependencies ===" && \
 WORKDIR /app
 
 # Ensure local src is importable
-ENV PYTHONPATH=/app/src:/app/scenarios/bargaining/open_spiel:${PYTHONPATH:-}
+ENV PYTHONPATH=/app/src:/app/scenarios/bargaining/open_spiel
 
 # Cloud Run sets PORT; default to 8080 locally
 ENV PORT=8080
