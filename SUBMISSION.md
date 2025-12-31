@@ -68,7 +68,7 @@ The framework is based on computational game theory methodology developed by Zun
    - Record payoffs and outcomes
 
 4. Meta-game analysis:
-   - Construct payoff matrix M[i][j]
+   - Construct payoff matrix where M[i][j] = agent i's average payoff against agent j
    - Solve for MENE via MILP
    - Compute regret and welfare metrics
 
@@ -104,15 +104,17 @@ Each game is a multi-round alternating-offer protocol where agents propose item 
 
 ### Primary Metric: MENE Regret
 
-The regret measures the incentive to deviate from the Nash equilibrium:
+The regret measures the deviation incentive for each pure strategy:
 
 ```
-Regret(i) = max(0, BR_payoff(i) - MENE_payoff(i))
+Regret(π) = max(0, u(π, σ*) - u(σ*))
 ```
 
-Where BR_payoff is the best-response payoff against the MENE mixture.
+Where:
+- u(π, σ*) = expected payoff for pure strategy π against the MENE mixture
+- u(σ*) = expected payoff at equilibrium
 
-**Interpretation**: Lower regret = better adapted to strategic competition
+**Interpretation**: Lower regret = better adapted to strategic competition. Zero regret means the strategy is in the equilibrium support or weakly dominated.
 
 ### Welfare Metrics
 

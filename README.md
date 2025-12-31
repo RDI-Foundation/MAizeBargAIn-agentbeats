@@ -2,7 +2,7 @@
 
 **AgentBeats Competition Submission: Green Agent for Multi-Agent Negotiation Assessment**
 
-This repository contains a **green agent** that implements an Empirical Game-Theoretic Analysis (EGTA) framework for evaluating negotiation agents. Based on methodology from Zun Li and Michael Wellman, the agent computes Maximum Entropy Nash Equilibrium (MENE) to rigorously assess purple agent strategies.
+This repository contains a **green agent** that implements the **Empirical Meta-Game Analysis** framework from Smithline, Mascioli, Chakraborty & Wellman (2025) for evaluating negotiation agents. The agent computes **Maximum Entropy Nash Equilibrium (MENE)** to rigorously assess purple agent strategies within their strategic ecosystem.
 
 ## Quick Start
 
@@ -48,20 +48,29 @@ gcloud run deploy bargaining-green-agent \
 
 ---
 
-## How It Works
+## The Meta-Game Framework
 
-### The Meta-Game Framework
+This green agent implements the **Empirical Meta-Game Analysis** methodology introduced by Li & Wellman (2024) and applied to LLM bargaining evaluation in Smithline et al. (2025).
 
-Unlike traditional benchmarks that measure agents in isolation, meta-game analysis evaluates agents within their **strategic ecosystem**:
+### Why Meta-Game Analysis?
+
+Traditional benchmarks evaluate agents in isolation against fixed opponents. But in strategic environments, an agent's performance inherently depends on the behavior of other agents. Meta-game analysis addresses this by:
+
+1. **Constructing an empirical game** over the space of agent strategies
+2. **Computing Nash equilibria** to identify stable population mixtures
+3. **Evaluating agents at equilibrium** to measure how well-adapted they are to strategic competition
+
+### Framework Overview
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │  Purple Agent   │    │   Green Agent    │    │  Baseline Pool  │
 │  (Challenger)   │───▶│  (Evaluator)     │◀───│  soft, tough,   │
-└─────────────────┘    │                  │    │  aspiration,    │
-                       │  1. Build Roster │    │  walk, nfsp,    │
-                       │  2. Run N² Games │    │  rnad           │
-                       │  3. MENE Solve   │    └─────────────────┘
+└─────────────────┘    │                  │    │  aspire, walk,  │
+                       │  1. Build Roster │    │  nfsp, rnad     │
+                       │  2. Simulate N²  │    └─────────────────┘
+                       │     Matchups     │
+                       │  3. MENE Solve   │
                        │  4. Compute      │
                        │     Metrics      │
                        └────────┬─────────┘
@@ -76,31 +85,68 @@ Unlike traditional benchmarks that measure agents in isolation, meta-game analys
                        └─────────────────┘
 ```
 
-**Key Insight**: A purple agent isn't just tested against fixed opponents. It joins a population of strategies, and we find the Nash equilibrium of the meta-game to measure how well-adapted it is.
-
 ### Evaluation Process
 
-1. **Roster Construction**: Your purple agent joins baseline agents (soft, tough, aspiration, walk) and optionally RL agents (NFSP, RNaD)
+**Step 1: Agent Roster Construction**
+- Your purple agent joins a pool of baseline strategies
+- Heuristic agents: `soft` (accepts any offer), `tough` (minimal offers), `aspire` (concession schedule), `walk` (takes BATNA)
+- RL-derived policies: `nfsp` (Neural Fictitious Self-Play), `rnad` (Regularized Nash Dynamics)
 
-2. **Pairwise Simulation**: Every agent pair plays N games in OpenSpiel's negotiation environment:
-   - 3 item types with private valuations
-   - Private BATNAs (outside options)
-   - Discount factor for time pressure
-   - Multi-round alternating offers
+**Step 2: Pairwise Simulation**
+- For each ordered pair (i, j), simulate N games with agent i as row player and j as column player
+- Uses OpenSpiel's negotiation game with:
+  - T=3 item types with quantities (7, 4, 1)
+  - Private valuations drawn uniformly from [1, 100]
+  - Private BATNAs (outside options)
+  - Discount factor γ ∈ {0.9, 0.98} per round
+  - Maximum R ∈ {3, 5} rounds
 
-3. **MENE Computation**: Solve for the Maximum Entropy Nash Equilibrium using MILP (CVXPY)
+**Step 3: Payoff Matrix & MENE**
+- Construct symmetric payoff matrix where M[i][j] = agent i's average payoff when playing against agent j
+- Solve for **Maximum Entropy Nash Equilibrium** using MILP (CVXPY)
+- Bootstrap resampling (default 100 iterations) for statistical robustness
 
-4. **Metrics Extraction**: Compute regret, welfare, and fairness metrics weighted by the equilibrium
+**Step 4: Metrics Computation**
+- Compute regret and welfare metrics weighted by the MENE mixture
 
-### Metrics
+---
 
-| Metric | What It Measures | Good Score |
-|--------|------------------|------------|
-| **MENE Regret** | Incentive to deviate from equilibrium | < 5 |
-| **UW%** | Total value created (utilitarian) | > 80% |
-| **NW%** | Balanced value distribution | > 75% |
-| **NWA%** | Surplus over outside options | > 40% |
-| **EF1%** | Envy-free allocations | > 90% |
+## Evaluation Metrics
+
+### MENE Regret (Primary Metric)
+
+The regret of a pure strategy π at Nash equilibrium σ* measures the deviation incentive:
+
+```
+Regret(π) = max(0, u(π, σ*) - u(σ*))
+```
+
+Where:
+- u(π, σ*) = expected payoff for pure strategy π against the equilibrium mixture
+- u(σ*) = expected payoff at equilibrium (playing the mixture)
+
+**Interpretation**: Lower regret means the agent is better adapted to the equilibrium. An agent with zero regret has no incentive to deviate—it is either in the equilibrium support or weakly dominated. Positive regret indicates the strategy outperforms the equilibrium mixture (which should be near-zero for a correctly computed MENE).
+
+### Welfare Metrics
+
+| Metric | Formula | Description |
+|--------|---------|-------------|
+| **UW (Utilitarian Welfare)** | u₁ + u₂ | Total value created by both players |
+| **NW (Nash Welfare)** | √(u₁ × u₂) | Geometric mean - balances efficiency and equity |
+| **NW+ (Nash Welfare Advantage)** | √(max(0, u₁-b₁) × max(0, u₂-b₂)) | Surplus over BATNAs |
+| **EF1 (Envy-Free up to 1 item)** | Boolean per game | Fairness: envy eliminable by removing one item |
+
+All welfare metrics are normalized against calibration constants for cross-comparison.
+
+### Interpreting Results
+
+| Metric | Good Performance |
+|--------|------------------|
+| MENE Regret | < 5 (well-adapted to equilibrium) |
+| UW% | > 80% (efficient outcomes) |
+| NW% | > 75% (balanced value distribution) |
+| NW+% | > 40% (surplus over outside options) |
+| EF1% | > 90% (fair allocations) |
 
 ---
 
@@ -130,8 +176,8 @@ Per the A2A protocol, send an assessment request to the green agent:
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `games` | 50 | Number of games per agent pair |
-| `max_rounds` | 5 | Maximum negotiation rounds |
-| `discount` | 0.98 | Per-round discount factor |
+| `max_rounds` | 5 | Maximum negotiation rounds (R) |
+| `discount` | 0.98 | Per-round discount factor (γ) |
 | `bootstrap` | 100 | Bootstrap iterations for MENE |
 | `challenger_circle` | 0 | Prompt sophistication level (0-6) |
 | `challenger_label` | "challenger" | Label for your agent in results |
@@ -139,15 +185,19 @@ Per the A2A protocol, send an assessment request to the green agent:
 
 ### Prompt Circles (LLM Agents)
 
-For LLM-based purple agents, the green agent injects structured prompts:
+The green agent provides structured prompts to LLM-based purple agents via "circles" - a hierarchical prompting framework:
 
-| Circle | Focus |
-|--------|-------|
-| 0-1 | Basic rules, valuations, available actions |
-| 2 | BATNA comparison emphasis |
-| 3 | Step-by-step reasoning framework |
-| 4 | Common mistake awareness |
-| 5-6 | Detailed error prevention with examples |
+| Circle | Content |
+|--------|---------|
+| 0 | Bare rules: items, valuations, BATNA, actions |
+| 1 | + Objective specification (maximize outcome) |
+| 2 | + Worked numeric example of offer evaluation |
+| 3 | + Step-by-step routine: assess, compare, decide |
+| 4 | + Five common negotiation mistakes to avoid |
+| 5 | + Quick numeric checks against those mistakes |
+| 6 | + Strategic inference from opponent's offers |
+
+Set `challenger_circle` to inject these prompts into observations sent to your agent.
 
 ---
 
@@ -157,7 +207,7 @@ Your purple agent must:
 
 1. **Implement A2A protocol** - Expose an A2A server endpoint
 2. **Handle negotiation messages** - Receive observations with valuations, BATNAs, and offers
-3. **Return valid actions** - Propose offers or accept/reject
+3. **Return valid actions** - Propose offers or accept/walk
 
 ### Expected Message Format
 
@@ -178,19 +228,30 @@ The green agent sends observations like:
 Your agent responds with an action:
 
 ```json
-{
-  "action": "propose",
-  "offer": [4, 2, 1]
-}
+{"action": "COUNTEROFFER", "offer": [4, 2, 1]}
 ```
 
 Or:
 
 ```json
-{
-  "action": "accept"
-}
+{"action": "ACCEPT"}
 ```
+
+Or:
+
+```json
+{"action": "WALK"}
+```
+
+### Common Mistakes to Avoid
+
+From our analysis, these are the five key mistakes that LLM negotiators make:
+
+1. **M1**: Making an offer worse than your previous offer
+2. **M2**: Making an offer worse for you than your BATNA
+3. **M3**: Offering no items or all items (extreme divisions)
+4. **M4**: Accepting an offer worse than your BATNA
+5. **M5**: Walking away from an offer better than your BATNA
 
 ---
 
@@ -238,7 +299,7 @@ scenarios/bargaining/
 │   ├── agents/              # Baseline negotiation agents
 │   │   ├── soft.py          # Always-accept agent
 │   │   ├── tough.py         # Minimal-offer agent
-│   │   ├── aspiration.py    # Gradual-concession agent
+│   │   ├── aspiration.py    # Concession-schedule agent
 │   │   ├── walk.py          # BATNA-preferring agent
 │   │   ├── nfsp.py          # Neural Fictitious Self-Play
 │   │   └── rnad.py          # Regularized Nash Dynamics
@@ -266,16 +327,21 @@ The Maximum Entropy Nash Equilibrium is computed using:
 
 - CVXPY for convex optimization
 - ECOS_BB or GLPK_MI as MILP solvers
-- Bootstrap resampling for robustness
+- Bootstrap resampling for robustness (following Wiedenbeck et al., 2014)
 
 ---
 
 ## References
 
-1. Li, Z., & Wellman, M. P. (2023). "Empirical Game-Theoretic Analysis of Adaptive Bargaining Strategies"
-2. Wellman, M. P. (2016). "Putting the agent in agent-based modeling." Autonomous Agents and Multi-Agent Systems.
-3. Lewis, M., et al. (2017). "Deal or No Deal? End-to-End Learning for Negotiation Dialogues." EMNLP.
-4. Lanctot, M., et al. (2019). "OpenSpiel: A Framework for Reinforcement Learning in Games." arXiv:1908.09453.
+1. **Smithline, G., Mascioli, C., Chakraborty, M., & Wellman, M. P.** (2025). "Measuring Competition and Cooperation in LLM Bargaining: An Empirical Meta-Game Analysis." University of Michigan.
+
+2. **Li, Z., & Wellman, M. P.** (2024). "A Meta-Game Evaluation Framework for Deep Multiagent Reinforcement Learning." IJCAI.
+
+3. **Wellman, M. P., Tuyls, K., & Greenwald, A.** (2025). "Empirical Game-Theoretic Analysis: A Survey." JAIR.
+
+4. **Lewis, M., et al.** (2017). "Deal or No Deal? End-to-End Learning for Negotiation Dialogues." EMNLP.
+
+5. **Lanctot, M., et al.** (2019). "OpenSpiel: A Framework for Reinforcement Learning in Games." arXiv:1908.09453.
 
 ---
 
@@ -291,5 +357,6 @@ This is a submission for the **AgentBeats x AgentX Competition 2025**.
 
 - **Agent Type**: Green (Evaluator)
 - **Domain**: Multi-agent negotiation / bargaining
-- **Methodology**: Empirical Game-Theoretic Analysis with MENE
+- **Methodology**: Empirical Meta-Game Analysis with MENE
 - **Docker Image**: `ghcr.io/gsmithline/tutorial-agent-beats-comp:latest`
+- **Authors**: Based on research from the University of Michigan Strategic Reasoning Group
