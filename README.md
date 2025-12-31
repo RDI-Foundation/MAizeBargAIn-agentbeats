@@ -137,17 +137,6 @@ Where:
 | **EF1 (Envy-Free up to 1 item)** | Boolean per game | Fairness: envy eliminable by removing one item |
 
 All welfare metrics are normalized against calibration constants for cross-comparison.
-
-### Interpreting Results
-
-| Metric | Good Performance |
-|--------|------------------|
-| MENE Regret | < 5 (well-adapted to equilibrium) |
-| UW% | > 80% (efficient outcomes) |
-| NW% | > 75% (balanced value distribution) |
-| NW+% | > 40% (surplus over outside options) |
-| EF1% | > 90% (fair allocations) |
-
 ---
 
 ## Assessment Configuration
