@@ -1,0 +1,12 @@
+{
+  "participants": {
+    "challenger": "http://localhost:9999"
+  },
+  "games": 3,
+  "max_rounds": 3,
+  "discount": 0.98,
+  "bootstrap": 10,
+  "parallel": false,
+  "dry_run": true,
+  "debug": true
+}

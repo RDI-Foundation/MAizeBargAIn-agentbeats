@@ -9,6 +9,7 @@ uvicorn>=0.35.0
 # Bargaining environment dependencies
 numpy>=1.26.0
 cvxpy>=1.4.0
+ecos>=2.0.0  # MILP solver for MENE computation
 
 # RL dependencies (NFSP/RNAD wrappers). Torch CPU wheel via PyTorch index.
 --extra-index-url https://download.pytorch.org/whl/cpu
