@@ -9,11 +9,24 @@ uvicorn>=0.35.0
 # Bargaining environment dependencies
 numpy>=1.26.0
 cvxpy>=1.4.0
-ecos>=2.0.0  # MILP solver for MENE computation
+ecos>=2.0.0  # MILP solver for MENE computation (includes ECOS_BB)
+cvxopt>=1.3.0  # Provides GLPK_MI solver interface for CVXPY
 
-# RL dependencies (NFSP/RNAD wrappers). Torch CPU wheel via PyTorch index.
+# RL dependencies (NFSP/RNAD wrappers)
+# PyTorch CPU wheel via PyTorch index for NFSP
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.3.1
+
+# JAX/Haiku for RNAD agent (uses pre-trained RNaDSolver checkpoints)
+jax>=0.4.20
+jaxlib>=0.4.20
+dm-haiku>=0.0.12
+optax>=0.1.7
+chex>=0.1.8
+rlax>=0.1.6
+
+# OpenSpiel transitive dependency (required for full RNAD policy)
+ml-collections>=0.1.1
 
 # Note: The agentbeats package is included as a local package in src/agentbeats/
 # Python buildpacks will automatically include it when deploying from the repo root.

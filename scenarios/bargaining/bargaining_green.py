@@ -283,15 +283,30 @@ if __name__ == "__main__":
         def _card(name: str, url: str) -> AgentCard:
             skill = AgentSkill(
                 id="bargaining_assessor",
-                name="Bargaining meta-game assessment",
-                description="Runs bargaining simulations and meta-game analysis over provided participants.",
-                tags=["bargaining", "assessment"],
-                examples=None,
+                name="Bargaining Meta-Game Assessment",
+                description=(
+                    "Evaluates negotiation agents using Empirical Game-Theoretic Analysis (EGTA). "
+                    "Simulates pairwise bargaining games in OpenSpiel, computes Maximum Entropy Nash "
+                    "Equilibrium (MENE), and returns regret and welfare metrics. Supports BG4/BG5/BG6 "
+                    "game configurations with pre-trained NFSP and RNAD baseline agents."
+                ),
+                tags=["bargaining", "negotiation", "game-theory", "EGTA", "MENE", "assessment"],
+                examples=[
+                    "Evaluate my negotiation agent against baseline strategies",
+                    "Run meta-game analysis with custom discount factor",
+                    "Assess agent performance using MENE regret metrics",
+                ],
             )
             return AgentCard(
                 name=name,
-                version="0.1.0",
-                description="Bargaining Green Agent",
+                version="1.0.0",
+                description=(
+                    "Meta-Game Bargaining Evaluator: A green agent that implements Empirical "
+                    "Game-Theoretic Analysis for multi-agent negotiation assessment. Computes "
+                    "MENE-based regret and welfare metrics (UW, NW, NW+, EF1) to evaluate how "
+                    "well-adapted agents are to strategic competition. Based on research from "
+                    "the University of Michigan Strategic Reasoning Group."
+                ),
                 url=url,
                 preferred_transport="JSONRPC",
                 protocol_version="0.3.0",

@@ -20,3 +20,17 @@ dist/
 node_modules/
 terminals/
 
+# OpenSpiel dependencies (will be cloned fresh in Docker)
+scenarios/bargaining/open_spiel/open_spiel/abseil-cpp/
+scenarios/bargaining/open_spiel/pybind11/
+scenarios/bargaining/open_spiel/open_spiel/pybind11_abseil/
+scenarios/bargaining/open_spiel/open_spiel/games/bridge/double_dummy_solver/
+scenarios/bargaining/open_spiel/*.so
+scenarios/bargaining/open_spiel/build/
+
+# Large files not needed for build
+bargaining_runs/
+meta_game_analysis/
+*.pkl
+*.npy
+

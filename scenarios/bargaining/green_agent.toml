@@ -3,14 +3,29 @@
 
 [controller]
 name = "BargainingGreen"
-description = "Bargaining meta-game analysis controller for AgentBeats"
-version = "0.1.0"
+description = """
+Meta-Game Bargaining Evaluator: Implements Empirical Game-Theoretic Analysis (EGTA)
+for multi-agent negotiation assessment. Computes Maximum Entropy Nash Equilibrium (MENE)
+to evaluate agent strategies against a pool of baseline negotiators (soft, tough,
+aspiration, walk, NFSP, RNAD). Returns regret and welfare metrics (UW, NW, NW+, EF1).
+"""
+version = "1.0.0"
+
 # Entrypoint module and function
 entrypoint = "scenarios.bargaining.controller:main"
+
 # The controller requires a `challenger` participant in each assessment request.
-# Supply the purple agent URL under that role (and optionally set `challenger_label`,
-# `challenger_circle`, `remote_agents`, or `remote_agent_circles` in the request config)
-# when running evaluations.
+# Supply the purple agent URL under that role when running evaluations.
+#
+# Optional config parameters:
+#   - challenger_label: Custom label for the challenger agent (default: "challenger")
+#   - challenger_circle: Prompt sophistication level 0-6 for LLM agents
+#   - games: Number of games per agent pair (default: 50)
+#   - max_rounds: Maximum negotiation rounds (default: 5)
+#   - discount: Per-round discount factor (default: 0.98)
+#   - bootstrap: MENE bootstrap iterations (default: 100)
+#   - remote_agents: Additional remote agents {"label": "url"}
+#   - remote_agent_circles: Prompt circles for remote agents {"label": circle}
 
 [server]
 # Cloud Run will set PORT environment variable (defaults to 8080)
@@ -20,4 +35,15 @@ port = 8080  # Will be overridden by $PORT env var in Cloud Run
 
 # Optional: Set CARD_URL environment variable in Cloud Run to override the agent card URL
 # This should be set to the public HTTPS URL provided by Cloud Run
+
+[game_configs]
+# Supported game configurations (automatically selected based on discount/max_rounds)
+# BG4: discount=0.9, max_rounds=3 (high time pressure)
+# BG5: discount=0.98, max_rounds=3 (low time pressure, short)
+# BG6: discount=0.98, max_rounds=5 (low time pressure, long)
+
+[baseline_agents]
+# Pre-trained RL checkpoints included for all configurations
+nfsp = ["nfsp_bg4.pt", "nfsp_ng5.pt", "nfsp_bg6.pt"]
+rnad = ["rnad_bg4.pkl", "rnad_bg5.pkl", "rnad_bg6.pkl"]
 

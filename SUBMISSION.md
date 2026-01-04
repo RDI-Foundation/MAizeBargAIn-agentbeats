@@ -82,10 +82,20 @@ Based on OpenSpiel's negotiation game:
 - **Items**: 3 types with quantities [7, 4, 1]
 - **Valuations**: Private, drawn uniformly from [1, 100]
 - **BATNAs**: Private outside options
-- **Discount**: 0.98 per round (time pressure)
-- **Rounds**: Maximum 5
+- **Discount**: Configurable (0.9 or 0.98 per round)
+- **Rounds**: Configurable (3 or 5 maximum)
 
 Each game is a multi-round alternating-offer protocol where agents propose item divisions until one accepts or the deadline hits.
+
+### Game Configurations
+
+| Config | Discount (γ) | Rounds (R) | Use Case |
+|--------|--------------|------------|----------|
+| BG4 | 0.9 | 3 | High time pressure |
+| BG5 | 0.98 | 3 | Low time pressure, short |
+| BG6 | 0.98 | 5 | Low time pressure, long |
+
+Pre-trained NFSP and RNAD checkpoints are included for all configurations.
 
 ### Baseline Agent Pool
 
@@ -219,7 +229,17 @@ Set `challenger_circle` to inject these prompts into observations sent to your a
 - **OpenSpiel**: Custom build with negotiation game (bundled)
 - **CVXPY**: MENE computation via MILP
 - **A2A SDK**: Agent communication protocol
-- **PyTorch**: Optional, for RL agent checkpoints
+- **PyTorch**: For NFSP agent checkpoints
+- **JAX/Haiku**: For RNAD agent checkpoints
+
+### RL Checkpoints
+
+Pre-trained checkpoints are included in `scenarios/bargaining/rl_agent_checkpoints/`:
+
+| Agent | Format | Configs |
+|-------|--------|---------|
+| NFSP | PyTorch (`.pt`) | BG4, BG5, BG6 |
+| RNAD | Pickle (`.pkl`) | BG4, BG5, BG6 |
 
 ---
 

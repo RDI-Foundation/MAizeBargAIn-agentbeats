@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# Install system dependencies for OpenSpiel build
+# Install system dependencies for OpenSpiel build and MILP solvers
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
@@ -10,7 +10,9 @@ RUN apt-get update && \
         git \
         curl \
         python3-dev \
-        libffi-dev && \
+        libffi-dev \
+        libglpk-dev \
+        glpk-utils && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -101,6 +101,16 @@ Traditional benchmarks evaluate agents in isolation against fixed opponents. But
   - Discount factor γ ∈ {0.9, 0.98} per round
   - Maximum R ∈ {3, 5} rounds
 
+**Game Configurations (from paper)**
+
+| Config | Discount (γ) | Rounds (R) | Description |
+|--------|--------------|------------|-------------|
+| BG4 | 0.9 | 3 | High time pressure, short horizon |
+| BG5 | 0.98 | 3 | Low time pressure, short horizon |
+| BG6 | 0.98 | 5 | Low time pressure, long horizon |
+
+Pre-trained NFSP and RNAD checkpoints are provided for all three configurations.
+
 **Step 3: Payoff Matrix & MENE**
 - Construct symmetric payoff matrix where M[i][j] = agent i's average payoff when playing against agent j
 - Solve for **Maximum Entropy Nash Equilibrium** using MILP (CVXPY)
@@ -292,9 +302,13 @@ scenarios/bargaining/
 │   │   ├── walk.py          # BATNA-preferring agent
 │   │   ├── nfsp.py          # Neural Fictitious Self-Play
 │   │   └── rnad.py          # Regularized Nash Dynamics
+│   ├── pyspiel_integration.py # Game parameter builder
 │   ├── pyspiel_runner.py    # OpenSpiel game interface
 │   ├── mene_solver.py       # MENE computation via MILP
 │   └── run_entire_matrix.py # Matrix simulation orchestrator
+├── rl_agent_checkpoints/    # Pre-trained RL policies
+│   ├── nfsp/                # NFSP checkpoints (bg4, bg5, bg6)
+│   └── rnad/                # RNAD checkpoints (bg4, bg5, bg6)
 └── open_spiel/              # Custom OpenSpiel with negotiation game
 ```
 
@@ -310,6 +324,30 @@ This repository includes a custom OpenSpiel build with the negotiation/bargainin
 - pybind11 Python bindings
 - Double Dummy Solver (for bridge, included in full build)
 
+**Loading the Game Correctly**
+
+Always use `build_negotiation_params()` from `pyspiel_integration.py` to ensure correct game loading:
+
+```python
+from scenarios.bargaining.bargaining_env.pyspiel_integration import (
+    build_negotiation_params,
+    try_load_pyspiel_game
+)
+
+params = build_negotiation_params(
+    discount=0.98,
+    max_rounds=3,
+    num_items=3,
+    item_quantities=(7, 4, 1),
+    min_value=1,
+    max_value=100,
+    max_quantity=10,
+)
+game = try_load_pyspiel_game(params)
+```
+
+> **Note**: The `item_quantities` parameter must use comma-separated values internally (e.g., `"7,4,1"`). The helper function handles this automatically.
+
 ### MENE Solver
 
 The Maximum Entropy Nash Equilibrium is computed using:
@@ -317,6 +355,17 @@ The Maximum Entropy Nash Equilibrium is computed using:
 - CVXPY for convex optimization
 - ECOS_BB or GLPK_MI as MILP solvers
 - Bootstrap resampling for robustness (following Wiedenbeck et al., 2014)
+
+### RL Agent Checkpoints
+
+Pre-trained checkpoints are available for both NFSP and RNAD agents:
+
+| Agent | BG4 | BG5 | BG6 |
+|-------|-----|-----|-----|
+| NFSP | `nfsp_bg4.pt` | `nfsp_ng5.pt` | `nfsp_bg6.pt` |
+| RNAD | `rnad_bg4.pkl` | `rnad_bg5.pkl` | `rnad_bg6.pkl` |
+
+The checkpoints are automatically selected based on the game configuration (discount and max_rounds).
 
 ---
 

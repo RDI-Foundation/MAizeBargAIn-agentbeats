@@ -103,7 +103,7 @@ class NFSPAgentWrapper:
 		if checkpoint_path:
 			if os.path.exists(checkpoint_path):
 				try:
-					checkpoint = torch.load(checkpoint_path, map_location=self.device)
+					checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=True)
 					self._policy_net.load_state_dict(checkpoint)
 					self._policy_net.eval()
 					if self.debug:
@@ -202,6 +202,3 @@ class NFSPAgentWrapper:
 			traceback.print_exc()
 
 		return final_action
-
-
-
