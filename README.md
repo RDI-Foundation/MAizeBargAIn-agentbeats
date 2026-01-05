@@ -4,6 +4,11 @@
 
 This repository contains a **green agent** that implements the **Empirical Meta-Game Analysis** framework from Smithline, Mascioli, Chakraborty & Wellman (2025) for evaluating negotiation agents. The agent computes **Maximum Entropy Nash Equilibrium (MENE)** to rigorously assess purple agent strategies within their strategic ecosystem.
 
+## Requirements
+
+- **Python 3.11** (required - the OpenSpiel binary is compiled for Python 3.11)
+- [uv](https://docs.astral.sh/uv/) package manager (recommended)
+
 ## Quick Start
 
 ### Option A: Run Locally
@@ -12,6 +17,8 @@ This repository contains a **green agent** that implements the **Empirical Meta-
 # Clone and setup
 git clone https://github.com/gsmithline/tutorial-agent-beats-comp.git
 cd tutorial-agent-beats-comp
+
+# Install dependencies (uses Python 3.11 via .python-version)
 uv sync
 
 # Set environment variables
@@ -19,8 +26,12 @@ cp sample.env .env
 # Add your API key to .env
 
 # Run a local assessment
-uv run python -m scenarios.bargaining.bargaining_green once --config '{"challenger_url": "https://your-purple-agent.com", "games": 10}'
+PYTHONPATH=scenarios/bargaining/open_spiel:$PYTHONPATH \
+  uv run python -m scenarios.bargaining.bargaining_green once \
+  --config '{"challenger_url": "https://your-purple-agent.com", "games": 10}'
 ```
+
+> **Note**: The `PYTHONPATH` must include `scenarios/bargaining/open_spiel` to load the pre-compiled OpenSpiel module.
 
 ### Option B: Deploy to Cloud Run
 
@@ -260,7 +271,8 @@ From our analysis, these are the five key mistakes that LLM negotiators make:
 
 ```bash
 # Start the A2A server
-uv run python -m scenarios.bargaining.bargaining_green serve \
+PYTHONPATH=scenarios/bargaining/open_spiel:$PYTHONPATH \
+  uv run python -m scenarios.bargaining.bargaining_green serve \
   --host 0.0.0.0 \
   --port 8080
 
@@ -273,7 +285,8 @@ curl -X POST http://localhost:8080/a2a \
 ### Running a Single Assessment
 
 ```bash
-uv run python -m scenarios.bargaining.bargaining_green once \
+PYTHONPATH=scenarios/bargaining/open_spiel:$PYTHONPATH \
+  uv run python -m scenarios.bargaining.bargaining_green once \
   --config '{"challenger_url": "https://...", "games": 10}'
 ```
 
@@ -318,7 +331,11 @@ scenarios/bargaining/
 
 ### OpenSpiel Integration
 
-This repository includes a custom OpenSpiel build with the negotiation/bargaining game. The Docker build compiles OpenSpiel from source with:
+This repository includes a custom OpenSpiel build with the negotiation/bargaining game.
+
+**Important**: The pre-compiled `pyspiel.so` in `scenarios/bargaining/open_spiel/` is built for **Python 3.11**. The project is configured to use Python 3.11 via `.python-version`.
+
+The Docker build compiles OpenSpiel from source with:
 
 - Abseil C++ library
 - pybind11 Python bindings
@@ -397,4 +414,5 @@ This is a submission for the **AgentBeats x AgentX Competition 2025**.
 - **Domain**: Multi-agent negotiation / bargaining
 - **Methodology**: Empirical Meta-Game Analysis with MENE
 - **Docker Image**: `ghcr.io/gsmithline/tutorial-agent-beats-comp:latest`
+- **Python Version**: 3.11 (required)
 - **Authors**: Based on research from the University of Michigan Strategic Reasoning Group

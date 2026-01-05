@@ -226,8 +226,9 @@ Set `challenger_circle` to inject these prompts into observations sent to your a
 
 ## Dependencies
 
+- **Python 3.11**: Required (OpenSpiel binary is compiled for Python 3.11)
 - **OpenSpiel**: Custom build with negotiation game (bundled)
-- **CVXPY**: MENE computation via MILP
+- **CVXPY + ECOS**: MENE computation via MILP
 - **A2A SDK**: Agent communication protocol
 - **PyTorch**: For NFSP agent checkpoints
 - **JAX/Haiku**: For RNAD agent checkpoints
