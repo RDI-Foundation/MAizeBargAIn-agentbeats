@@ -139,6 +139,8 @@ All metrics are normalized as percentages of calibration constants.
 
 ### Result Format
 
+Results include bootstrap means with standard errors (following the paper's format: mean±SE):
+
 ```json
 {
   "summary": {
@@ -153,10 +155,15 @@ All metrics are normalized as percentages of calibration constants.
     {
       "agent_name": "challenger",
       "mene_regret": 1.2,
+      "mene_regret_se": 0.15,
       "uw_percent": 89.1,
+      "uw_percent_se": 0.08,
       "nw_percent": 85.3,
+      "nw_percent_se": 0.12,
       "nwa_percent": 52.1,
-      "ef1_percent": 94.2
+      "nwa_percent_se": 0.18,
+      "ef1_percent": 94.2,
+      "ef1_percent_se": 0.25
     }
   ],
   "mene_distribution": {
@@ -168,6 +175,8 @@ All metrics are normalized as percentages of calibration constants.
   }
 }
 ```
+
+**Note**: Standard errors are computed via bootstrap resampling (default 100 iterations), following the methodology from [Wiedenbeck et al., 2014].
 
 ---
 

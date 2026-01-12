@@ -244,7 +244,7 @@ def run_analysis(
 			"agent_metrics": agent_metrics,
 		})
 
-	# Summaries (means over bootstraps)
+	# Summaries (means and standard errors over bootstraps)
 	def average_list(lst: List[List[float]]) -> List[float]:
 		if not lst:
 			return []
@@ -255,22 +255,52 @@ def run_analysis(
 				sums[t] += v[t]
 		return [x / len(lst) for x in sums]
 
+	def std_error_list(lst: List[List[float]]) -> List[float]:
+		"""Compute standard error = std / sqrt(n) for each position."""
+		if not lst or len(lst) < 2:
+			return [0.0] * (len(lst[0]) if lst else 0)
+		k = len(lst[0])
+		n = len(lst)
+		means = average_list(lst)
+		variances = [0.0] * k
+		for v in lst:
+			for t in range(k):
+				variances[t] += (v[t] - means[t]) ** 2
+		# Standard error = std / sqrt(n) = sqrt(variance / n) / sqrt(n) = sqrt(variance / n^2) but actually
+		# SE = sqrt(sum((x - mean)^2) / (n-1)) / sqrt(n) = sqrt(variance / n) where variance = sum/n-1
+		return [((variances[t] / (n - 1)) ** 0.5) / (n ** 0.5) if n > 1 else 0.0 for t in range(k)]
+
 	mixtures = [br["mixture"] for br in boot_results]
 	regs = [br["regrets"] for br in boot_results]
 	avg_mixture = average_list(mixtures)
 	avg_regrets = average_list(regs)
+	se_regrets = std_error_list(regs)
 
-	# Average agent metrics
+	# Average agent metrics with standard errors
 	avg_agent_metrics: Dict[str, Dict[str, float]] = {}
+	se_agent_metrics: Dict[str, Dict[str, float]] = {}
 	for ai in agents:
 		acc = {"UW_norm": 0.0, "NW_norm": 0.0, "NWA_norm": 0.0, "EF1_freq": 0.0}
+		vals: Dict[str, List[float]] = {"UW_norm": [], "NW_norm": [], "NWA_norm": [], "EF1_freq": []}
 		for br in boot_results:
 			m = br["agent_metrics"][ai]
 			for k in acc:
 				acc[k] += float(m[k])
+				vals[k].append(float(m[k]))
 		for k in acc:
 			acc[k] /= len(boot_results) if boot_results else 1.0
 		avg_agent_metrics[ai] = acc
+		# Compute standard errors
+		se = {}
+		n = len(boot_results)
+		for k in vals:
+			if n > 1:
+				mean_val = acc[k]
+				variance = sum((v - mean_val) ** 2 for v in vals[k]) / (n - 1)
+				se[k] = (variance ** 0.5) / (n ** 0.5)
+			else:
+				se[k] = 0.0
+		se_agent_metrics[ai] = se
 
 	result = {
 		"agents": agents,
@@ -281,6 +311,10 @@ def run_analysis(
 				"mixture": avg_mixture,
 				"regrets": avg_regrets,
 				"agent_metrics": avg_agent_metrics,
+			},
+			"standard_errors": {
+				"regrets": se_regrets,
+				"agent_metrics": se_agent_metrics,
 			},
 		},
 		"params": {
@@ -336,18 +370,26 @@ def run_metagame_analysis(config: Dict[str, Any] | None = None) -> Dict[str, Any
 		agents: List[str] = list(res.get("agents", []))
 		avg_regrets: List[float] = res.get("bootstrap", {}).get("averages", {}).get("regrets", []) or []
 		avg_agent_metrics: Dict[str, Dict[str, float]] = res.get("bootstrap", {}).get("averages", {}).get("agent_metrics", {}) or {}
+		se_regrets: List[float] = res.get("bootstrap", {}).get("standard_errors", {}).get("regrets", []) or []
+		se_agent_metrics: Dict[str, Dict[str, float]] = res.get("bootstrap", {}).get("standard_errors", {}).get("agent_metrics", {}) or {}
 
 		per_agent: List[Dict[str, Any]] = []
 		for idx, agent in enumerate(agents):
 			am = avg_agent_metrics.get(agent, {})
+			se_am = se_agent_metrics.get(agent, {})
 			per_agent.append(
 				{
 					"agent_name": agent,
 					"mene_regret": float(avg_regrets[idx]) if idx < len(avg_regrets) else None,
+					"mene_regret_se": float(se_regrets[idx]) if idx < len(se_regrets) else None,
 					"nw_percent": float(am.get("NW_norm", 0.0)) * 100.0,
+					"nw_percent_se": float(se_am.get("NW_norm", 0.0)) * 100.0,
 					"nwa_percent": float(am.get("NWA_norm", 0.0)) * 100.0,
+					"nwa_percent_se": float(se_am.get("NWA_norm", 0.0)) * 100.0,
 					"uw_percent": float(am.get("UW_norm", 0.0)) * 100.0,
+					"uw_percent_se": float(se_am.get("UW_norm", 0.0)) * 100.0,
 					"ef1_percent": float(am.get("EF1_freq", 0.0)) * 100.0,
+					"ef1_percent_se": float(se_am.get("EF1_freq", 0.0)) * 100.0,
 				}
 			)
 
