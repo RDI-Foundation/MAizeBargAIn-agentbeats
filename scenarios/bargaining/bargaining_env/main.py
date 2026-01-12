@@ -255,8 +255,8 @@ def run_analysis(
 				sums[t] += v[t]
 		return [x / len(lst) for x in sums]
 
-	def std_error_list(lst: List[List[float]]) -> List[float]:
-		"""Compute standard error = std / sqrt(n) for each position."""
+	def bootstrap_se_list(lst: List[List[float]]) -> List[float]:
+		"""Compute bootstrap standard error = std of bootstrap distribution for each position."""
 		if not lst or len(lst) < 2:
 			return [0.0] * (len(lst[0]) if lst else 0)
 		k = len(lst[0])
@@ -266,15 +266,14 @@ def run_analysis(
 		for v in lst:
 			for t in range(k):
 				variances[t] += (v[t] - means[t]) ** 2
-		# Standard error = std / sqrt(n) = sqrt(variance / n) / sqrt(n) = sqrt(variance / n^2) but actually
-		# SE = sqrt(sum((x - mean)^2) / (n-1)) / sqrt(n) = sqrt(variance / n) where variance = sum/n-1
-		return [((variances[t] / (n - 1)) ** 0.5) / (n ** 0.5) if n > 1 else 0.0 for t in range(k)]
+		# Bootstrap SE = std of the bootstrap distribution (sample std)
+		return [((variances[t] / (n - 1)) ** 0.5) if n > 1 else 0.0 for t in range(k)]
 
 	mixtures = [br["mixture"] for br in boot_results]
 	regs = [br["regrets"] for br in boot_results]
 	avg_mixture = average_list(mixtures)
 	avg_regrets = average_list(regs)
-	se_regrets = std_error_list(regs)
+	se_regrets = bootstrap_se_list(regs)
 
 	# Average agent metrics with standard errors
 	avg_agent_metrics: Dict[str, Dict[str, float]] = {}
@@ -290,14 +289,14 @@ def run_analysis(
 		for k in acc:
 			acc[k] /= len(boot_results) if boot_results else 1.0
 		avg_agent_metrics[ai] = acc
-		# Compute standard errors
+		# Compute bootstrap standard errors (std of bootstrap distribution)
 		se = {}
 		n = len(boot_results)
 		for k in vals:
 			if n > 1:
 				mean_val = acc[k]
 				variance = sum((v - mean_val) ** 2 for v in vals[k]) / (n - 1)
-				se[k] = (variance ** 0.5) / (n ** 0.5)
+				se[k] = variance ** 0.5  # Bootstrap SE = std of bootstrap distribution
 			else:
 				se[k] = 0.0
 		se_agent_metrics[ai] = se
