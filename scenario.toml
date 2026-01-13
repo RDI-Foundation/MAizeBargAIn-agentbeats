@@ -1,0 +1,24 @@
+# AgentBeats Leaderboard Configuration for Meta-Game Negotiation Assessor
+# This file configures assessments for the bargaining green agent
+
+[green_agent]
+# Use Docker image for cloud runs, or local endpoint for testing
+image = "ghcr.io/gsmithline/tutorial-agent-beats-comp:latest"
+# agentbeats_id = ""  # Fill in your agent ID from the AgentBeats registration page
+
+# Baseline evaluation (no external purple agent required)
+# The green agent evaluates its built-in baseline agents:
+# soft, tough, aspiration, walk, nfsp, rnad
+
+[config]
+games = 50
+max_rounds = 5
+discount = 0.98
+bootstrap = 100
+full_matrix = true
+
+# Optional: Add external purple agents to evaluate
+# [[participants]]
+# agentbeats_id = "<purple-agent-id>"
+# name = "challenger"
+# env = { OPENAI_API_KEY = "${OPENAI_API_KEY}" }
