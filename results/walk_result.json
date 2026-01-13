@@ -1,0 +1,16 @@
+{
+  "agent_name": "walk",
+  "mene_regret": 0.0,
+  "mene_regret_se": 0.0,
+  "uw_percent": 0.0,
+  "uw_percent_se": 0.0,
+  "nw_percent": 0.0,
+  "nw_percent_se": 0.0,
+  "nwa_percent": 0.0,
+  "nwa_percent_se": 0.0,
+  "ef1_percent": 0.0,
+  "ef1_percent_se": 0.0,
+  "timestamp": "2026-01-13T07:53:39.087777",
+  "assessment_id": "baseline_evaluation_20260111",
+  "green_agent": "meta-game-negotiation-assessor"
+}

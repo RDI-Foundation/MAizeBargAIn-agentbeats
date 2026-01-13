@@ -1,0 +1,16 @@
+{
+  "agent_name": "nfsp",
+  "mene_regret": 0.0,
+  "mene_regret_se": 0.0,
+  "uw_percent": 105.01232194496768,
+  "uw_percent_se": 10.890959909571347,
+  "nw_percent": 94.2376276223824,
+  "nw_percent_se": 9.976146723774368,
+  "nwa_percent": 21.900929212376,
+  "nwa_percent_se": 19.63666888808144,
+  "ef1_percent": 24.542920464983876,
+  "ef1_percent_se": 21.5006493811997,
+  "timestamp": "2026-01-13T07:53:39.087892",
+  "assessment_id": "baseline_evaluation_20260111",
+  "green_agent": "meta-game-negotiation-assessor"
+}

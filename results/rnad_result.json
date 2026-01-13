@@ -1,0 +1,16 @@
+{
+  "agent_name": "rnad",
+  "mene_regret": 2.3888534315119616e-07,
+  "mene_regret_se": 1.3288795633164507e-07,
+  "uw_percent": 101.61788361450186,
+  "uw_percent_se": 10.851965731973698,
+  "nw_percent": 106.9005860645731,
+  "nw_percent_se": 10.669942845320781,
+  "nwa_percent": 19.332634076390814,
+  "nwa_percent_se": 20.533386073219102,
+  "ef1_percent": 8.477362562435012,
+  "ef1_percent_se": 8.17949190169185,
+  "timestamp": "2026-01-13T07:53:39.088025",
+  "assessment_id": "baseline_evaluation_20260111",
+  "green_agent": "meta-game-negotiation-assessor"
+}
