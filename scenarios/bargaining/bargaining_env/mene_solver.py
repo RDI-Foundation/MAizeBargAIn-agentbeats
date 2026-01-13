@@ -4,7 +4,8 @@ from typing import Tuple
 import numpy as np
 
 # Tolerance for regret feasibility
-EPSILON: float = 1e-6
+# Note: 1e-6 can be too tight for numerical stability with MILP solvers
+EPSILON: float = 1e-4
 
 
 def _simplex_projection(x: np.ndarray) -> np.ndarray:
