@@ -47,4 +47,6 @@ ENV PORT=8080
 
 EXPOSE 8080
 
-CMD ["/bin/sh", "-c", "python -m scenarios.bargaining.bargaining_green serve --host 0.0.0.0 --port ${PORT:-8080} --card-url ${CARD_URL:-http://localhost:${PORT:-8080}/}"]
+# Use ENTRYPOINT so compose commands append to it
+ENTRYPOINT ["python", "-m", "scenarios.bargaining.bargaining_green", "serve"]
+CMD ["--host", "0.0.0.0", "--port", "8080"]
