@@ -406,6 +406,13 @@ Apache 2.0
 
 ---
 
+## Related Repositories
+
+| Repository | Description |
+|------------|-------------|
+| [meta-game-leaderboard](https://github.com/gsmithline/meta-game-leaderboard) | Leaderboard for submitting and comparing agents |
+| [llm-negotiator-purple](https://github.com/gsmithline/llm-negotiator-purple) | Example Claude-powered purple agent |
+
 ## AgentBeats Competition
 
 This is a submission for the **AgentBeats x AgentX Competition 2025**.
