@@ -1,1 +1,0 @@
-# Leaderboard webhook configured
