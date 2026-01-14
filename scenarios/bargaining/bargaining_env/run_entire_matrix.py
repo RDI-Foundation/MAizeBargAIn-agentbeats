@@ -96,7 +96,8 @@ def _agent_impl(kind: str) -> BaseNegotiator | None:
 
 def _propose_allocation(policy: str, q: Tuple[int, int, int]) -> Tuple[List[int], List[int]]:
     # Returns (a1, a2) allocations
-    if policy == "walk":
+    # "challenger" is a remote agent that always walks - treat it like walk on fallback
+    if policy in ("walk", "challenger"):
         return [0, 0, 0], [0, 0, 0]
     if policy == "soft":
         # even-ish split
@@ -122,7 +123,8 @@ def _value(v: List[int], a: List[int]) -> int:
 
 def _accepts(policy: str, offer_value: int, batna: int, counter_value: int) -> bool:
     # Simple acceptance thresholds by policy
-    if policy == "walk":
+    # "challenger" is a remote agent that always walks - treat it like walk on fallback
+    if policy in ("walk", "challenger"):
         return False
     if policy == "soft":
         return offer_value >= batna
