@@ -74,8 +74,8 @@ def _dot(v: List[int], q: Tuple[int, int, int]) -> int:
 
 def _policy_kind(agent_name: str) -> str:
     n = agent_name.lower()
-    # Only "walk" baseline uses synthetic data; challenger plays real games via remote agent
-    if "walk" in n and "challenger" not in n:
+    # "challenger" is a remote agent that always walks
+    if "walk" in n or "challenger" in n:
         return "walk"
     if "tough" in n or "boulware" in n or "-c-6" in n or "c-6" in n:
         return "tough"
@@ -97,8 +97,8 @@ def _agent_impl(kind: str) -> BaseNegotiator | None:
 
 def _propose_allocation(policy: str, q: Tuple[int, int, int]) -> Tuple[List[int], List[int]]:
     # Returns (a1, a2) allocations
-    # "walk" baseline uses empty allocation (fallback only)
-    if policy == "walk":
+    # "challenger" is a remote agent that always walks - treat it like walk on fallback
+    if policy in ("walk", "challenger"):
         return [0, 0, 0], [0, 0, 0]
     if policy == "soft":
         # even-ish split
@@ -124,8 +124,8 @@ def _value(v: List[int], a: List[int]) -> int:
 
 def _accepts(policy: str, offer_value: int, batna: int, counter_value: int) -> bool:
     # Simple acceptance thresholds by policy
-    # "walk" baseline never accepts (fallback only)
-    if policy == "walk":
+    # "challenger" is a remote agent that always walks - treat it like walk on fallback
+    if policy in ("walk", "challenger"):
         return False
     if policy == "soft":
         return offer_value >= batna
@@ -730,7 +730,11 @@ def run_matrix_pipeline(
         pair_key, row_agent, col_agent, g = item
         row_policy = _policy_kind(row_agent)
         col_policy = _policy_kind(col_agent)
-        if row_policy == "walk" or col_policy == "walk":
+        # Remote agents always play real games, even if they have "walk" policy
+        row_is_remote = row_agent in remote_agent_urls
+        col_is_remote = col_agent in remote_agent_urls
+        use_walk_baseline = (row_policy == "walk" or col_policy == "walk") and not row_is_remote and not col_is_remote
+        if use_walk_baseline:
             base = _ensure_walk_baseline(
                 base_dir=base_dir,
                 discount=discount,
