@@ -74,7 +74,8 @@ def _dot(v: List[int], q: Tuple[int, int, int]) -> int:
 
 def _policy_kind(agent_name: str) -> str:
     n = agent_name.lower()
-    if "walk" in n:
+    # "challenger" is a remote agent that always walks
+    if "walk" in n or "challenger" in n:
         return "walk"
     if "tough" in n or "boulware" in n or "-c-6" in n or "c-6" in n:
         return "tough"
