@@ -739,11 +739,20 @@ def run_matrix_pipeline(
                 games=WALK_BASELINE_GAMES,
                 rng_seed=WALK_BASELINE_SEED,
             )
+            # Create symlink from pair-specific path to walk baseline so analysis can find it
+            traces_dir = base_dir / "traces"
+            pair_trace_file = traces_dir / f"{pair_key}.jsonl"
+            walk_baseline_file = Path(base["trace_file"])
+            if not pair_trace_file.exists() and walk_baseline_file.exists():
+                try:
+                    pair_trace_file.symlink_to(walk_baseline_file.name)
+                except (OSError, FileExistsError):
+                    pass  # Symlink may already exist or fail on some systems
             sim = {
                 **base,
                 "pair": pair_key,
                 # Use the same trace file for all walk pairings; counts are total games
-                "trace_file": base["trace_file"],
+                "trace_file": str(pair_trace_file),
                 "accept_rate": base["accept_rate"],
                 "ef1_rate": base["ef1_rate"],
                 "row_mean_payoff": base["row_mean_payoff"],
