@@ -324,22 +324,25 @@ def run_pyspiel_pair_nfsp_with_traces(
     sum_row = 0.0
     sum_col = 0.0
 
+    # Instantiate NFSP/RNAD wrappers ONCE before the game loop (not per-game)
+    # This avoids repeated JAX/Haiku initialization which is very slow on some CPUs
+    is_row_nfsp = "nfsp" in agent_row.lower()
+    is_col_nfsp = "nfsp" in agent_col.lower()
+    is_row_rnad = "rnad" in agent_row.lower()
+    is_col_rnad = "rnad" in agent_col.lower()
+    is_row_remote = agent_row in remote_map
+    is_col_remote = agent_col in remote_map
+
+    nfsp_row = NFSPAgentWrapper(game, 0, checkpoint_path=nfsp_checkpoint_path, discount=discount, max_rounds=max_rounds) if is_row_nfsp else None
+    nfsp_col = NFSPAgentWrapper(game, 1, checkpoint_path=nfsp_checkpoint_path, discount=discount, max_rounds=max_rounds) if is_col_nfsp else None
+    rnad_row = RNaDAgentWrapper(game, 0, checkpoint_path=rnad_checkpoint_path) if is_row_rnad else None
+    rnad_col = RNaDAgentWrapper(game, 1, checkpoint_path=rnad_checkpoint_path) if is_col_rnad else None
+    remote_row = RemoteNegotiator(label=agent_row, endpoint=remote_map[agent_row], prompt_circle=remote_circles.get(agent_row)) if is_row_remote else None
+    remote_col = RemoteNegotiator(label=agent_col, endpoint=remote_map[agent_col], prompt_circle=remote_circles.get(agent_col)) if is_col_remote else None
+
     for gi in range(games):
         state = game.new_initial_state()
         round_idx = 1
-        # Instantiate NFSP/RNAD wrappers if needed
-        is_row_nfsp = "nfsp" in agent_row.lower()
-        is_col_nfsp = "nfsp" in agent_col.lower()
-        is_row_rnad = "rnad" in agent_row.lower()
-        is_col_rnad = "rnad" in agent_col.lower()
-        nfsp_row = NFSPAgentWrapper(game, 0, checkpoint_path=nfsp_checkpoint_path, discount=discount, max_rounds=max_rounds) if is_row_nfsp else None
-        nfsp_col = NFSPAgentWrapper(game, 1, checkpoint_path=nfsp_checkpoint_path, discount=discount, max_rounds=max_rounds) if is_col_nfsp else None
-        rnad_row = RNaDAgentWrapper(game, 0, checkpoint_path=rnad_checkpoint_path) if is_row_rnad else None
-        rnad_col = RNaDAgentWrapper(game, 1, checkpoint_path=rnad_checkpoint_path) if is_col_rnad else None
-        is_row_remote = agent_row in remote_map
-        is_col_remote = agent_col in remote_map
-        remote_row = RemoteNegotiator(label=agent_row, endpoint=remote_map[agent_row], prompt_circle=remote_circles.get(agent_row)) if is_row_remote else None
-        remote_col = RemoteNegotiator(label=agent_col, endpoint=remote_map[agent_col], prompt_circle=remote_circles.get(agent_col)) if is_col_remote else None
 
         # Capture valuations/BATNAs from observations (best-effort) once at first decision node
         v1 = v2 = [0, 0, 0]
