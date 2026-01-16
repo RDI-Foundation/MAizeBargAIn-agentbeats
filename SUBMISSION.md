@@ -101,7 +101,7 @@ Pre-trained NFSP and RNAD checkpoints are included for all configurations.
 
 | Agent | Strategy |
 |-------|----------|
-| `soft` | Accepts any offer above BATNA |
+| `soft` | Always accepts any offer |
 | `tough` | Proposes minimal offers, rarely concedes |
 | `aspiration` | Gradually lowers aspirations over rounds |
 | `walk` | Takes BATNA if offers don't improve quickly |

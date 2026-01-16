@@ -105,7 +105,7 @@ class BargainingGreenAgent(GreenAgent):
             "circle": cfg.get("circle"),
             "date": cfg.get("date"),
             "max_rounds": cfg.get("max_rounds", 5),
-            "games": cfg.get("games", 20),
+            "games": cfg.get("games", 50),
             "total_games": cfg.get("total_games"),
             "parallel": cfg.get("parallel", True),
             "discount": cfg.get("discount", 0.98),
