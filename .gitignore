@@ -10,3 +10,5 @@ __pycache__/
 bargaining_llm_traces/
 bargaining_runs/
 meta_game_analysis/
+
+amber/.env
