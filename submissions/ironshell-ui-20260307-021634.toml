@@ -1,0 +1,17 @@
+# run: HARD DEBUG Monte Carlo v4.0 — 2026-03-06T19:00
+[green_agent]
+image = "ghcr.io/gsmithline/tutorial-agent-beats-comp:latest"
+env = { LOG_LEVEL = "INFO" }
+
+# IronShell Purple Agent
+[[participants]]
+image = "ghcr.io/ironshell-ui/claudecowork-agent:master"
+name = "challenger"
+env = { DEEPSEEK_API_KEY = "${DEEPSEEK_API_KEY}", KIMI_API_KEY = "${KIMI_API_KEY}", MINIMAX_API_KEY = "${MINIMAX_API_KEY}", SERPAPI_KEY = "${SERPAPI_KEY}", OPENAI_API_KEY = "${OPENAI_API_KEY}", GOOGLE_API_KEY = "${GOOGLE_API_KEY}", OPENROUTER_API_KEY = "${OPENROUTER_API_KEY}", FEATHERLESS_API_KEY = "${FEATHERLESS_API_KEY}" }
+
+[config]
+games = 50
+max_rounds = 5
+discount = 0.98
+bootstrap = 100
+full_matrix = true
