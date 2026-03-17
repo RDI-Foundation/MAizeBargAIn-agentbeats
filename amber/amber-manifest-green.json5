@@ -1,0 +1,45 @@
+{
+  manifest_version: "0.1.0",
+  program: {
+    image: "ghcr.io/gsmithline/tutorial-agent-beats-comp:latest",
+    entrypoint: [
+      "python",
+      "-m",
+      "scenarios.bargaining.bargaining_green",
+      "serve",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8081"
+    ],
+    env: {
+      PROXY_URL: "${slots.proxy.url}",
+      LOG_LEVEL: "INFO"
+    },
+    network: {
+      endpoints: [
+        { name: "endpoint", port: 8081 }
+      ],
+    },
+  },
+  config_schema: {
+    type: "object",
+    properties: {
+    },
+    required: [],
+    additionalProperties: false,
+  },
+  slots: {
+    proxy: { kind: "a2a" }
+  },
+  provides: {
+    a2a: { kind: "a2a", endpoint: "endpoint" }
+  },
+  exports: {
+    a2a: "a2a"
+  },
+  metadata: {
+    assessment_config: {"games": 10, "max_rounds": 5, "discount": 0.98, "bootstrap": 100, "full_matrix": true},
+    participant_roles: ["challenger"]
+  }
+}

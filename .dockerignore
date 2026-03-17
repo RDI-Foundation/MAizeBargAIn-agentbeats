@@ -34,3 +34,4 @@ meta_game_analysis/
 *.pkl
 *.npy
 
+amber/.env

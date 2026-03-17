@@ -1,0 +1,49 @@
+{
+  manifest_version: "0.1.0",
+  config_schema: {
+    type: "object",
+    properties: {
+      anthropic_api_key: { type: "string", secret: true },
+    },
+    required: ["anthropic_api_key"],
+    additionalProperties: false,
+  },
+  components: {
+    gateway: {
+      manifest: "https://raw.githubusercontent.com/RDI-Foundation/agentbeats-gateway/refs/heads/main/amber-manifest.json5",
+      config: {
+        assessment_config: {
+          games: 10,
+          max_rounds: 5,
+          discount: 0.98,
+          bootstrap: 100,
+          full_matrix: true,
+        },
+        participant_roles: {
+          green: "evaluator",
+          purple1: "challenger",
+        },
+        callback_urls: {
+          green: "${bindings.green-proxy.url}",
+        },
+      },
+    },
+    green: {
+      manifest: "./amber-manifest-green.json5",
+      config: {},
+    },
+    purple_agent: {
+      manifest: "./amber-manifest-purple.json5",
+      config: {
+        anthropic_api_key: "${config.anthropic_api_key}",
+        anthropic_model: "claude-haiku-4-5"
+      },
+    },
+  },
+  bindings: [
+    { to: "#gateway.green", from: "#green.a2a" },
+    { to: "#gateway.purple1", from: "#purple_agent.a2a" },
+    { to: "#green.proxy", from: "#gateway.proxy", weak: true, name: "green-proxy" },
+  ],
+  exports: { results: "#gateway.results" },
+}
