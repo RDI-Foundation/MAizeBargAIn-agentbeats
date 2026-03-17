@@ -8,19 +8,16 @@
       "--host", 
       "0.0.0.0", 
       "--port", 
-      "8080",
-      "--card-url",
-      "http://purple-agent:8080"
+      "8080"
     ],
     env: {
-      PROXY_URL: "${slots.proxy.url}",
       ANTHROPIC_API_KEY: "${config.anthropic_api_key}",
       ANTHROPIC_MODEL: "${config.anthropic_model}",
       LOG_LEVEL: "INFO"
     },
     network: {
       endpoints: [
-        { name: "endpoint", port: 8080 },
+        { name: "endpoint", port: 8080 }
       ],
     },
   },
@@ -28,18 +25,15 @@
     type: "object",
     properties: {
       anthropic_api_key: { type: "string", secret: true },
-      anthropic_model: { type: "string" },
+      anthropic_model: { type: "string" }
     },
     required: ["anthropic_api_key", "anthropic_model"],
-    additionalProperties: false,
-  },
-  slots: {
-    proxy: { kind: "a2a" },
+    additionalProperties: false
   },
   provides: {
-    a2a: { kind: "a2a", endpoint: "endpoint" },
+    a2a: { kind: "a2a", endpoint: "endpoint" }
   },
   exports: {
-    a2a: "a2a",
+    a2a: "a2a"
   },
 }

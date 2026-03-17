@@ -44,7 +44,6 @@
     { to: "#gateway.green", from: "#green.a2a" },
     { to: "#gateway.purple1", from: "#purple_agent.a2a" },
     { to: "#green.proxy", from: "#gateway.proxy", weak: true, name: "green-proxy" },
-    { to: "#purple_agent.proxy", from: "#green.a2a" },
   ],
   exports: { results: "#gateway.results" },
 }

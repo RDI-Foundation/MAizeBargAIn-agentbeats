@@ -14,11 +14,11 @@
     ],
     env: {
       PROXY_URL: "${slots.proxy.url}",
-      LOG_LEVEL: "INFO",
+      LOG_LEVEL: "INFO"
     },
     network: {
       endpoints: [
-        { name: "endpoint", port: 8081 },
+        { name: "endpoint", port: 8081 }
       ],
     },
   },
@@ -30,13 +30,13 @@
     additionalProperties: false,
   },
   slots: {
-    proxy: { kind: "a2a" },
+    proxy: { kind: "a2a" }
   },
   provides: {
-    a2a: { kind: "a2a", endpoint: "endpoint" },
+    a2a: { kind: "a2a", endpoint: "endpoint" }
   },
   exports: {
-    a2a: "a2a",
+    a2a: "a2a"
   },
   metadata: {
     assessment_config: {"games": 10, "max_rounds": 5, "discount": 0.98, "bootstrap": 100, "full_matrix": true},
